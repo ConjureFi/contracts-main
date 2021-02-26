@@ -8,8 +8,6 @@ import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {SafeDecimalMath} from "./SafeDecimalMath.sol";
 
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
-import "./lib/FixedPoint.sol";
 import "./Owned.sol";
 import "./Pausable.sol";
 import "./interfaces/IConjure.sol";
@@ -334,7 +332,7 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
     }
 
     function closeLoan(uint256 loanID) external nonReentrant  {
-        _closeLoan(msg.sender, loanID);
+        _closeLoan(msg.sender, loanID, false);
     }
 
     // Add ETH collateral to an open loan
@@ -468,6 +466,9 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
             SafeDecimalMath.unit().add(liquidationPenalty)
         );
 
+        // save amount owed for later check if it was a full liquidation
+        uint256 amountOwed = synthLoan.loanAmount;
+
         // update remaining loanAmount less amount paid and update accrued interests less interest paid
         _updateLoan(synthLoan, synthLoan.loanAmount.sub(loanAmountPaid));
 
@@ -477,14 +478,28 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         // Send liquidated ETH collateral to msg.sender
         msg.sender.transfer(totalCollateralLiquidated);
 
-        // emit loan liquidation event
-        emit LoanPartiallyLiquidated(
-            _loanCreatorsAddress,
-            _loanID,
-            msg.sender,
-            amountToLiquidate,
-            totalCollateralLiquidated
-        );
+        // check if we have a full closure here
+        if (amountToLiquidate >= amountOwed)
+        {
+            _closeLoan(synthLoan.account, synthLoan.loanID, true);
+            // emit loan liquidation event
+            emit LoanLiquidated(
+                _loanCreatorsAddress,
+                _loanID,
+                msg.sender
+            );
+        }
+        else
+        {
+            // emit loan liquidation event
+            emit LoanPartiallyLiquidated(
+                _loanCreatorsAddress,
+                _loanID,
+                msg.sender,
+                amountToLiquidate,
+                totalCollateralLiquidated
+            );
+        }
     }
 
     function _splitInterestLoanPayment(
@@ -519,7 +534,8 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
 
     function _closeLoan(
         address account,
-        uint256 loanID
+        uint256 loanID,
+        bool liquidation
     ) private {
 
         // Get the loan from storage
@@ -528,21 +544,24 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         // Check loan exists and is open
         _checkLoanIsOpen(synthLoan);
 
-        uint256 repayAmount = synthLoan.loanAmount;
-
-        require(
-            IERC20(address(syntharb())).balanceOf(msg.sender) >= repayAmount,
-            "You do not have the required Synth balance to close this loan."
-        );
-
         // Record loan as closed
         _recordLoanClosure(synthLoan);
 
-        // Decrement totalIssuedSynths
-        totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount);
+        if (!liquidation)
+        {
+            uint256 repayAmount = synthLoan.loanAmount;
 
-        // Burn all Synths issued for the loan + the fees
-        syntharb().burn(msg.sender, repayAmount);
+            require(
+                IERC20(address(syntharb())).balanceOf(msg.sender) >= repayAmount,
+                "You do not have the required Synth balance to close this loan."
+            );
+
+            // Decrement totalIssuedSynths
+            totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount);
+
+            // Burn all Synths issued for the loan + the fees
+            syntharb().burn(msg.sender, repayAmount);
+        }
 
         uint256 remainingCollateral = synthLoan.collateralAmount;
 
