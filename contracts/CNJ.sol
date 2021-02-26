@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
-contract Ndx {
+contract CNJ {
     /// @notice EIP-20 token name for this token
     string public constant name = "Conjure";
 
