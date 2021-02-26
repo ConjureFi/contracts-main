@@ -30,7 +30,7 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
     // The ratio of Collateral to synths issued
     uint256 public collateralizationRatio = SafeDecimalMath.unit() * 120;
 
-    // Minting fee for issuing the synths. Default 50 bips.
+    // Minting fee for issuing the synths
     uint256 public issueFeeRate;
 
     // Minimum amount of ETH to create loan preventing griefing and gas consumption. Min 0.05 ETH
@@ -38,9 +38,6 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
 
     // Maximum number of loans an account can create
     uint256 public accountLoanLimit = 50;
-
-    // Time when remaining loans can be liquidated
-    uint256 public liquidationDeadline;
 
     // Liquidation ratio when loans can be liquidated
     uint256 public liquidationRatio = (120 * SafeDecimalMath.unit()) / 100; // 1.2 ratio
@@ -141,8 +138,7 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         uint256 _totalIssuedSynths,
         uint256 _totalLoansCreated,
         uint256 _totalOpenLoanCount,
-        uint256 _ethBalance,
-        uint256 _liquidationDeadline
+        uint256 _ethBalance
     )
     {
         _collateralizationRatio = collateralizationRatio;
@@ -153,7 +149,6 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         _totalLoansCreated = totalLoansCreated;
         _totalOpenLoanCount = totalOpenLoanCount;
         _ethBalance = address(this).balance;
-        _liquidationDeadline = liquidationDeadline;
     }
 
     // returns value of 100 / collateralizationRatio.
@@ -339,7 +334,7 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
     }
 
     function closeLoan(uint256 loanID) external nonReentrant  {
-        _closeLoan(msg.sender, loanID, false);
+        _closeLoan(msg.sender, loanID);
     }
 
     // Add ETH collateral to an open loan
@@ -436,11 +431,20 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
 
         require(collateralRatio < liquidationRatio, "Collateral ratio above liquidation ratio");
 
+        // get prices
+        uint currentprice = IConjure(arbasset).getPrice();
+        uint currentethusdprice = uint(IConjure(arbasset).getLatestETHUSDPrice());
+
         // calculate amount to liquidate to fix ratio including accrued interest
-        uint256 liquidationAmount = calculateAmountToLiquidate(
-            synthLoan.loanAmount,
+        // multiply the loan amount times current price in usd
+        // collateralValue is already in usd nomination
+        uint256 liquidationAmountUSD = calculateAmountToLiquidate(
+            synthLoan.loanAmount.multiplyDecimal(currentprice),
             collateralValue
         );
+
+        // calculate back the synth amount from the usd nomination
+        uint256 liquidationAmount = liquidationAmountUSD.divideDecimal(currentprice);
 
         // cap debt to liquidate
         uint256 amountToLiquidate = liquidationAmount < _debtToCover ? liquidationAmount : _debtToCover;
@@ -457,9 +461,6 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         _processInterestAndLoanPayment(loanAmountPaid);
 
         // Collateral value to redeem
-        uint currentprice = IConjure(arbasset).getPrice();
-        uint currentethusdprice = uint(IConjure(arbasset).getLatestETHUSDPrice());
-
         uint256 collateralRedeemed = amountToLiquidate.multiplyDecimal(currentprice).divideDecimal(currentethusdprice);
 
         // Add penalty
@@ -514,20 +515,11 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         }
     }
 
-    // Liquidation of an open loan available for anyone
-    function liquidateUnclosedLoan(address _loanCreatorsAddress, uint256 _loanID) external nonReentrant  {
-        // Close the creators loan and send collateral to the closer.
-        _closeLoan(_loanCreatorsAddress, _loanID, true);
-        // Tell the Dapps this loan was liquidated
-        emit LoanLiquidated(_loanCreatorsAddress, _loanID, msg.sender);
-    }
-
     // ========== PRIVATE FUNCTIONS ==========
 
     function _closeLoan(
         address account,
-        uint256 loanID,
-        bool liquidation
+        uint256 loanID
     ) private {
 
         // Get the loan from storage
@@ -547,36 +539,12 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         _recordLoanClosure(synthLoan);
 
         // Decrement totalIssuedSynths
-        // subtract the accrued interest from the loanAmount
         totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount);
-
-        // get prices
-        uint currentprice = IConjure(arbasset).getPrice();
-        uint currentethusdprice = uint(IConjure(arbasset).getLatestETHUSDPrice());
 
         // Burn all Synths issued for the loan + the fees
         syntharb().burn(msg.sender, repayAmount);
 
         uint256 remainingCollateral = synthLoan.collateralAmount;
-
-        if (liquidation) {
-            // Send liquidator redeemed collateral + 10% penalty
-            // Collateral value to redeem
-
-            uint256 collateralRedeemed = repayAmount.multiplyDecimal(currentprice).divideDecimal(currentethusdprice);
-
-            // add penalty
-            uint256 totalCollateralLiquidated = collateralRedeemed.multiplyDecimal(
-                SafeDecimalMath.unit().add(liquidationPenalty)
-            );
-
-            // ensure remaining ETH collateral sufficient to cover collateral liquidated
-            // will revert if the liquidated collateral + penalty is more than remaining collateral
-            remainingCollateral = remainingCollateral.sub(totalCollateralLiquidated);
-
-            // Send liquidator CollateralLiquidated
-            msg.sender.transfer(totalCollateralLiquidated);
-        }
 
         // Send remaining collateral to loan creator
         synthLoan.account.transfer(remainingCollateral);
