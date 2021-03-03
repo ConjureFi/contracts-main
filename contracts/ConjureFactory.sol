@@ -8,8 +8,8 @@ import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import "./lib/FixedPoint.sol";
-
-
+import "./interfaces/IEtherCollateralFactory.sol";
+import "./interfaces/UniswapV2OracleInterface.sol";
 
 contract Conjure is IERC20, ReentrancyGuard {
 
@@ -43,7 +43,8 @@ contract Conjure is IERC20, ReentrancyGuard {
     /// @notice the owner of the CONJURE factory
     address public _factoryaddress;
 
-    /// @notice the type of the arb asset (single asset, arb asset) (0... single, 1... arb, 2... index mcap, 3 ... sqrt mcap)
+    /// @notice the type of the arb asset (single asset, arb asset)
+    /// 0... single, 1... arb, 2... index mcap, 3 ... sqrt mcap
     uint8 public _assetType;
 
     /// @notice the address of the collateral contract factory
@@ -151,7 +152,13 @@ contract Conjure is IERC20, ReentrancyGuard {
         require(_inited == false);
         require(indexdivisor_ != 0);
 
-        _collateralContract = IEtherCollateralFactory(_collateralFactory).EtherCollateralMint(payable(address(this)), _owner, _factoryaddress, mintingFee_);
+        _collateralContract = IEtherCollateralFactory(_collateralFactory).EtherCollateralMint(
+            payable(address(this)),
+                _owner,
+                _factoryaddress,
+                mintingFee_
+        );
+
         _assetType = assetType_;
         _numoracles = oracleAddresses_.length;
         _indexdivisor = indexdivisor_;
@@ -176,15 +183,13 @@ contract Conjure is IERC20, ReentrancyGuard {
         _inited = true;
     }
 
-    function setEthUsdChainlinkOracle(address neworacle) public
-    {
+    function setEthUsdChainlinkOracle(address neworacle) public {
         require (msg.sender == _owner);
         AggregatorV3Interface newagg = AggregatorV3Interface(neworacle);
         ethusdchainlinkoracle = newagg;
     }
 
-    function setUniswapOracle(address newunioracle) public
-    {
+    function setUniswapOracle(address newunioracle) public {
         require (msg.sender == _owner);
         UniswapV2OracleInterface newagg = UniswapV2OracleInterface(newunioracle);
         _uniswapv2oracle = newagg;
@@ -194,8 +199,7 @@ contract Conjure is IERC20, ReentrancyGuard {
     * @dev Public burn function can only be called from the collateral contract
     *
     */
-    function burn(address account, uint amount) public
-    {
+    function burn(address account, uint amount) public {
         require(msg.sender == _collateralContract);
         _internalBurn(account, amount);
     }
@@ -204,8 +208,7 @@ contract Conjure is IERC20, ReentrancyGuard {
     * @dev Public mint function can only be called from the collateral contract
     *
     */
-    function mint(address account, uint amount) public
-    {
+    function mint(address account, uint amount) public {
         require(msg.sender == _collateralContract);
         _internalIssue(account, amount);
     }
@@ -323,18 +326,14 @@ contract Conjure is IERC20, ReentrancyGuard {
         }
 
         // if we dont have any weights
-        if (_assetType == 0)
-        {
+        if (_assetType == 0) {
             return (sum / arr.length);
         }
-
         // index pricing
-        if (_assetType == 2)
-        {
+        if (_assetType == 2) {
             return sum / _indexdivisor;
         }
-        if (_assetType == 3)
-        {
+        if (_assetType == 3) {
             return sum / _indexdivisor;
         }
 
@@ -373,37 +372,31 @@ contract Conjure is IERC20, ReentrancyGuard {
     * Returns the price for the arb asset (median price of the 5 assets)
     */
     function getPrice() public returns (uint) {
-
         // storing all in an array for further processing
         uint[] memory prices = new uint[](_oracleData.length);
 
         for (uint i = 0; i < _oracleData.length; i++) {
 
             // chainlink oracle
-            if (_oracleData[i].oracleType == 0)
-            {
+            if (_oracleData[i].oracleType == 0) {
                 AggregatorV3Interface pricefeed = AggregatorV3Interface(_oracleData[i].oracleaddress);
                 uint price = uint(getLatestPrice(pricefeed));
                 prices[i] = price;
 
                 // norming price
-                if (_maximumDecimals != _oracleData[i].decimals)
-                {
+                if (_maximumDecimals != _oracleData[i].decimals) {
                     prices[i] = prices[i] * 10 ** (_maximumDecimals - _oracleData[i].decimals);
                 }
 
-                if (_assetType == 1)
-                {
+                if (_assetType == 1) {
                     prices[i] = prices[i] * _oracleData[i].weight;
                 }
             }
 
             // uniswap TWAP
-            if (_oracleData[i].oracleType == 1)
-            {
+            if (_oracleData[i].oracleType == 1) {
                 // check if update price needed
-                if (_uniswapv2oracle.canUpdatePrice(_oracleData[i].oracleaddress) == true)
-                {
+                if (_uniswapv2oracle.canUpdatePrice(_oracleData[i].oracleaddress) == true) {
                     // update price
                     _uniswapv2oracle.updatePrice(_oracleData[i].oracleaddress);
                 }
@@ -412,33 +405,34 @@ contract Conjure is IERC20, ReentrancyGuard {
                 uint currentethtusdprice = uint(getLatestETHUSDPrice());
 
                 // grab latest price after update decode
-                FixedPoint.uq112x112 memory price = _uniswapv2oracle.computeAverageTokenPrice(_oracleData[i].oracleaddress,0, HOUR * 24 * 10);
+                FixedPoint.uq112x112 memory price = _uniswapv2oracle.computeAverageTokenPrice(
+                    _oracleData[i].oracleaddress,
+                    0,
+                    HOUR * 24 * 10
+                );
+
                 prices[i] = price.mul(currentethtusdprice).decode144();
 
                 // get total supply for indexes
                 uint totalsupply = IERC20(_oracleData[i].oracleaddress).totalSupply();
 
                 // norming price
-                if (_maximumDecimals != _oracleData[i].decimals)
-                {
+                if (_maximumDecimals != _oracleData[i].decimals) {
                     prices[i] = prices[i] * 10 ** (_maximumDecimals - _oracleData[i].decimals);
                     totalsupply = totalsupply * 10 ** (_maximumDecimals - _oracleData[i].decimals);
                 }
 
-                if (_assetType == 1)
-                {
+                if (_assetType == 1) {
                     prices[i] = prices[i] * _oracleData[i].weight;
                 }
 
                 // index
-                if (_assetType == 2)
-                {
+                if (_assetType == 2) {
                     prices[i] = (prices[i].mul(totalsupply) / UNIT);
                 }
 
                 // sqrt mcap
-                if (_assetType == 3)
-                {
+                if (_assetType == 3) {
                     // mcap
                     prices[i] =prices[i].mul(totalsupply) / UNIT;
                     // sqrt mcap
@@ -448,8 +442,7 @@ contract Conjure is IERC20, ReentrancyGuard {
             }
 
             // custom oracle
-            if (_oracleData[i].oracleType == 2)
-            {
+            if (_oracleData[i].oracleType == 2) {
                 address contractaddress = _oracleData[i].oracleaddress;
                 string memory signature = _oracleData[i].signature;
                 bytes memory calldatas = _oracleData[i].calldatas;
@@ -470,13 +463,11 @@ contract Conjure is IERC20, ReentrancyGuard {
                 prices[i] = price;
 
                 // norming price
-                if (_maximumDecimals != _oracleData[i].decimals)
-                {
+                if (_maximumDecimals != _oracleData[i].decimals) {
                     prices[i] = prices[i] * 10 ** (_maximumDecimals - _oracleData[i].decimals);
                 }
 
-                if (_assetType == 1)
-                {
+                if (_assetType == 1) {
                     prices[i] = prices[i] * _oracleData[i].weight;
                 }
             }
@@ -485,32 +476,27 @@ contract Conjure is IERC20, ReentrancyGuard {
         uint[] memory sorted = sort(prices);
 
         /// for single assets return median
-        if (_assetType == 0)
-        {
+        if (_assetType == 0) {
             uint modulo = sorted.length % 2;
 
             // uneven so we can take the middle
-            if (modulo == 1)
-            {
+            if (modulo == 1) {
                 uint sizer = (sorted.length + 1) / 2;
 
                 _latestobservedprice = sorted[sizer-1];
                 _latestobservedtime = block.timestamp;
 
-                if (_inverse && _inited)
-                {
-                    if (sorted[sizer-1] <= _deploymentPrice.mul(2) )
-                    {
+                if (_inverse && _inited) {
+                    if (sorted[sizer-1] <= _deploymentPrice.mul(2)) {
                         return 0;
                     }
+
                     return _deploymentPrice.mul(2).sub(sorted[sizer-1]);
                 }
 
                 return sorted[sizer-1];
-            }
             // take average of the 2 most inner numbers
-            else
-            {
+            } else {
                 uint size1 = (sorted.length) / 2;
                 uint size2 = size1 + 1;
 
@@ -524,10 +510,8 @@ contract Conjure is IERC20, ReentrancyGuard {
                 _latestobservedprice = getAverage(sortedmin);
                 _latestobservedtime = block.timestamp;
 
-                if (_inverse && _inited)
-                {
-                    if (getAverage(sortedmin) <= _deploymentPrice.mul(2) )
-                    {
+                if (_inverse && _inited) {
+                    if (getAverage(sortedmin) <= _deploymentPrice.mul(2)) {
                         return 0;
                     }
 
@@ -542,10 +526,8 @@ contract Conjure is IERC20, ReentrancyGuard {
         _latestobservedprice = getAverage(sorted);
         _latestobservedtime = block.timestamp;
 
-        if (_inverse && _inited)
-        {
-            if (getAverage(sorted) <= _deploymentPrice.mul(2) )
-            {
+        if (_inverse && _inited) {
+            if (getAverage(sorted) <= _deploymentPrice.mul(2)) {
                 return 0;
             }
 
@@ -562,13 +544,9 @@ contract Conjure is IERC20, ReentrancyGuard {
     /**
     * fallback function for collection funds
     */
-    fallback() external payable {
+    fallback() external payable {}
 
-    }
-
-    receive() external payable {
-
-    }
+    receive() external payable {}
 
     /**
      * @dev Returns the name of the token.
@@ -680,7 +658,6 @@ contract Conjure is IERC20, ReentrancyGuard {
         return true;
     }
 
-
     /**
      * @dev Sets `amount` as the allowance of `spender` over the `owner`s tokens.
      *
@@ -698,7 +675,9 @@ contract Conjure is IERC20, ReentrancyGuard {
         address owner,
         address spender,
         uint256 amount
-    ) internal {
+    )
+        internal
+    {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
 
@@ -710,7 +689,9 @@ contract Conjure is IERC20, ReentrancyGuard {
         address sender,
         address recipient,
         uint256 amount
-    ) internal {
+    )
+        internal
+    {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
         _balances[sender] = _balances[sender].sub(
@@ -731,14 +712,14 @@ contract Conjure is IERC20, ReentrancyGuard {
 contract ConjureFactory {
     event NewConjureContract(address deployed);
     event FactoryOwnerChanged(address newowner);
+
     address payable public factoryOwner;
 
     constructor() public {
         factoryOwner = msg.sender;
     }
 
-    function getFactoryOwner() public view returns (address payable)
-    {
+    function getFactoryOwner() public view returns (address payable) {
         return factoryOwner;
     }
 
@@ -751,7 +732,10 @@ contract ConjureFactory {
         address payable owner_,
         address uniswapv2oracle_,
         address collateralfactory_
-    ) public returns(address) {
+    )
+        public
+        returns(address)
+    {
         Conjure newContract = new Conjure(
             name_,
             symbol_,
@@ -760,6 +744,7 @@ contract ConjureFactory {
             uniswapv2oracle_,
             collateralfactory_
         );
+
         emit NewConjureContract(address(newContract));
         return address(newContract);
     }
@@ -772,22 +757,4 @@ contract ConjureFactory {
         factoryOwner = newOwner;
         emit FactoryOwnerChanged(factoryOwner);
     }
-}
-
-interface UniswapV2OracleInterface {
-    function computeAverageTokenPrice(
-        address token, uint256 minTimeElapsed, uint256 maxTimeElapsed
-    ) external view returns (FixedPoint.uq112x112 memory);
-
-    function computeAverageEthPrice(
-        address token, uint256 minTimeElapsed, uint256 maxTimeElapsed
-    ) external view returns (FixedPoint.uq112x112 memory);
-
-    function updatePrice(address token) external returns (bool);
-
-    function canUpdatePrice(address token) external returns (bool);
-}
-
-interface IEtherCollateralFactory {
-    function EtherCollateralMint(address payable asset_, address owner_, address factoryaddress_, uint256 mintingfeerate_) external returns (address);
 }
