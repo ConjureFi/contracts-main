@@ -11,16 +11,15 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./Owned.sol";
 import "./Pausable.sol";
 import "./interfaces/IConjure.sol";
+import "./interfaces/IConjureFactory.sol";
 
 contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;
 
-
     // ========== CONSTANTS ==========
     uint256 internal constant ONE_THOUSAND = 1e18 * 1000;
     uint256 internal constant ONE_HUNDRED = 1e18 * 100;
-
     uint256 internal constant ACCOUNT_LOAN_LIMIT_CAP = 1000;
 
     // ========== SETTER STATE VARIABLES ==========
@@ -56,11 +55,11 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
 
     // Synth loan storage struct
     struct SynthLoanStruct {
-        //  Acccount that created the loan
+        // Account that created the loan
         address payable account;
-        //  Amount (in collateral token ) that they deposited
+        // Amount (in collateral token ) that they deposited
         uint256 collateralAmount;
-        //  Amount (in synths) that they issued to borrow
+        // Amount (in synths) that they issued to borrow
         uint256 loanAmount;
         // Minting Fee
         uint256 mintingFee;
@@ -68,7 +67,7 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         uint256 timeCreated;
         // ID for the loan
         uint256 loanID;
-        // When the loan was paidback (closed)
+        // When the loan was paid back (closed)
         uint256 timeClosed;
     }
 
@@ -78,12 +77,22 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
     // Account Open Loan Counter
     mapping(address => uint256) public accountOpenLoanCounter;
 
+    // address of the conjure contract (which represents the asset)
     address payable public arbasset;
 
+    // address of the factory contract for fee distribution
     address public factoryaddress;
 
     // ========== CONSTRUCTOR ==========
-    constructor(address payable _asset, address _owner, address _factoryaddress, uint256 _mintingfeerate ) Owned(_owner) public  {
+    constructor(
+        address payable _asset,
+        address _owner,
+        address _factoryaddress,
+        uint256 _mintingfeerate
+    )
+        Owned(_owner)
+        public
+    {
         arbasset = _asset;
         factoryaddress = _factoryaddress;
         issueFeeRate = _mintingfeerate;
@@ -160,7 +169,10 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         uint currentprice = IConjure(arbasset).getPrice();
         uint currentethusdprice = uint(IConjure(arbasset).getLatestETHUSDPrice());
 
-        return collateralAmount.multiplyDecimal(issuanceRatio()).multiplyDecimal(currentethusdprice).divideDecimal(currentprice);
+        return collateralAmount
+        .multiplyDecimal(issuanceRatio())
+        .multiplyDecimal(currentethusdprice)
+        .divideDecimal(currentprice);
     }
 
     function collateralAmountForLoan(uint256 loanAmount) public returns (uint256) {
@@ -271,9 +283,7 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
     payable
     notPaused
     nonReentrant
-    returns (uint256 loanID)
-    {
-
+    returns (uint256 loanID) {
         // Require ETH sent to be greater than minLoanCollateralSize
         require(
             msg.value >= minLoanCollateralSize,
@@ -319,11 +329,10 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
 
         // Fee distribution. Mint the fees into the FeePool and record fees paid
         if (mintingFee > 0) {
-
             // calculate back factory owner fee is 0.25 on top of creator fee
             arbasset.transfer(mintingFee / 4 * 3);
 
-            address payable factoryowner = IFactoryAddress(factoryaddress).getFactoryOwner();
+            address payable factoryowner = IConjureFactory(factoryaddress).getFactoryOwner();
             factoryowner.transfer(mintingFee / 4);
         }
 
@@ -384,7 +393,6 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         uint256 _loanID,
         uint256 _repayAmount
     ) external  {
-
         // check msg.sender has sufficient funds to pay
         require(IERC20(address(syntharb())).balanceOf(msg.sender) >= _repayAmount, "Not enough balance");
 
@@ -416,7 +424,6 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         uint256 _loanID,
         uint256 _debtToCover
     ) external nonReentrant  {
-
         // check msg.sender (liquidator's wallet) has sufficient
         require(IERC20(address(syntharb())).balanceOf(msg.sender) >= _debtToCover, "Not enough balance");
 
@@ -479,8 +486,7 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         msg.sender.transfer(totalCollateralLiquidated);
 
         // check if we have a full closure here
-        if (amountToLiquidate >= amountOwed)
-        {
+        if (amountToLiquidate >= amountOwed) {
             _closeLoan(synthLoan.account, synthLoan.loanID, true);
             // emit loan liquidation event
             emit LoanLiquidated(
@@ -488,9 +494,7 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
                 _loanID,
                 msg.sender
             );
-        }
-        else
-        {
+        } else {
             // emit loan liquidation event
             emit LoanPartiallyLiquidated(
                 _loanCreatorsAddress,
@@ -537,7 +541,6 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         uint256 loanID,
         bool liquidation
     ) private {
-
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(account, loanID);
 
@@ -547,8 +550,7 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         // Record loan as closed
         _recordLoanClosure(synthLoan);
 
-        if (!liquidation)
-        {
+        if (!liquidation) {
             uint256 repayAmount = synthLoan.loanAmount;
 
             require(
@@ -596,8 +598,7 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
 
     function _updateLoanCollateral(SynthLoanStruct memory _synthLoan, uint256 _newCollateralAmount)
     private
-    returns (SynthLoanStruct memory)
-    {
+    returns (SynthLoanStruct memory) {
         // Get storage pointer to the accounts array of loans
         SynthLoanStruct[] storage synthLoans = accountsSynthLoans[_synthLoan.account];
         for (uint256 i = 0; i < synthLoans.length; i++) {
@@ -632,13 +633,9 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
     }
 
     function _calculateMintingFee(uint256 _ethAmount) private view returns (uint256 mintingFee) {
-
-        if (issueFeeRate == 0)
-        {
+        if (issueFeeRate == 0) {
             mintingFee = 0;
-        }
-        else
-        {
+        } else {
             mintingFee = _ethAmount.divideDecimalRound(10000 + issueFeeRate).multiplyDecimal(issueFeeRate);
         }
     }
@@ -678,32 +675,29 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
     event LoanRepaid(address indexed account, uint256 loanID, uint256 repaidAmount, uint256 newLoanAmount);
 }
 
+
 contract EtherCollateralFactory {
     event NewEtherCollateralContract(address deployed);
 
-    constructor() public {
-    }
+    constructor() public {}
 
     /**
      * @dev lets anyone mint a new CONJURE contract
-     */
+    */
     function EtherCollateralMint(
         address payable asset_,
         address owner_,
         address factoryaddress_,
         uint256 mintingfeerate_
-    ) public returns (address)  {
+    ) public returns (address) {
         EtherCollateral newContract = new EtherCollateral(
             asset_,
             owner_,
             factoryaddress_,
             mintingfeerate_
         );
+
         emit NewEtherCollateralContract(address(newContract));
         return address(newContract);
     }
-}
-
-interface IFactoryAddress {
-    function getFactoryOwner() external returns (address payable);
 }
