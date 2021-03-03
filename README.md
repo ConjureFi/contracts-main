@@ -7,6 +7,9 @@ Repository for the Conjure Contracts
 ## Gitbook
 The technical documentation can be found here: [https://docs.conjure.finance/](https://docs.conjure.finance/)
 
+## Dapps
+You can find the rinkeby version of the Conjure Dapp here: [https://rinkeby.conjure.finance/](https://rinkeby.conjure.finance/)
+
 # Setup
 
 ## Install the dependencies
