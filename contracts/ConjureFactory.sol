@@ -9,6 +9,8 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import "./lib/FixedPoint.sol";
 
+
+
 contract Conjure is IERC20, ReentrancyGuard {
 
     /// @notice using Openzeppelin contracts for SafeMath and Address
@@ -83,6 +85,12 @@ contract Conjure is IERC20, ReentrancyGuard {
     /// @notice the divisor for the index
     uint256 public _indexdivisor = 1;
 
+    /// @notice the modifier if the asset type is an inverse type
+    bool public _inverse = false;
+
+    /// @notice the modifier if the asset type is an inverse type
+    uint256  public _deploymentPrice;
+
     /// @notice constant for hourly observation
     uint256 HOUR = 3600;
 
@@ -129,6 +137,7 @@ contract Conjure is IERC20, ReentrancyGuard {
         uint256 mintingFee_,
         uint8 assetType_,
         uint256 indexdivisor_,
+        bool inverse_,
         address[] memory oracleAddresses_,
         uint8[] memory oracleTypes_,
         string[] memory signatures_,
@@ -146,6 +155,7 @@ contract Conjure is IERC20, ReentrancyGuard {
         _assetType = assetType_;
         _numoracles = oracleAddresses_.length;
         _indexdivisor = indexdivisor_;
+        _inverse = inverse_;
 
         // push the values into the oracle struct for further processing
         for (uint i = 0; i < oracleAddresses_.length; i++) {
@@ -162,7 +172,7 @@ contract Conjure is IERC20, ReentrancyGuard {
             require(decimals_[i] <= 18);
         }
 
-        getPrice();
+        _deploymentPrice = getPrice();
         _inited = true;
     }
 
@@ -486,6 +496,16 @@ contract Conjure is IERC20, ReentrancyGuard {
 
                 _latestobservedprice = sorted[sizer-1];
                 _latestobservedtime = block.timestamp;
+
+                if (_inverse && _inited)
+                {
+                    if (sorted[sizer-1] <= _deploymentPrice.mul(2) )
+                    {
+                        return 0;
+                    }
+                    return _deploymentPrice.mul(2).sub(sorted[sizer-1]);
+                }
+
                 return sorted[sizer-1];
             }
             // take average of the 2 most inner numbers
@@ -503,6 +523,17 @@ contract Conjure is IERC20, ReentrancyGuard {
 
                 _latestobservedprice = getAverage(sortedmin);
                 _latestobservedtime = block.timestamp;
+
+                if (_inverse && _inited)
+                {
+                    if (getAverage(sortedmin) <= _deploymentPrice.mul(2) )
+                    {
+                        return 0;
+                    }
+
+                    return _deploymentPrice.mul(2).sub(getAverage(sortedmin));
+                }
+
                 return getAverage(sortedmin);
             }
         }
@@ -510,6 +541,16 @@ contract Conjure is IERC20, ReentrancyGuard {
         /// else return avarage for arb assets
         _latestobservedprice = getAverage(sorted);
         _latestobservedtime = block.timestamp;
+
+        if (_inverse && _inited)
+        {
+            if (getAverage(sorted) <= _deploymentPrice.mul(2) )
+            {
+                return 0;
+            }
+
+            return _deploymentPrice.mul(2).sub(getAverage(sorted));
+        }
 
         return getAverage(sorted);
     }
