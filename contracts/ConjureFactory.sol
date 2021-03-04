@@ -10,6 +10,7 @@ import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import "./lib/FixedPoint.sol";
 import "./interfaces/IEtherCollateralFactory.sol";
 import "./interfaces/UniswapV2OracleInterface.sol";
+import "./EtherCollateralFactory.sol";
 
 /// @author Conjure Finance Team
 /// @title Conjure
@@ -47,7 +48,10 @@ contract Conjure is IERC20, ReentrancyGuard {
     address public _factoryaddress;
 
     // the type of the arb asset (single asset, arb asset)
-    // 0... single, 1... arb, 2... index mcap, 3 ... sqrt mcap
+    // 0... single asset     (uses median price)
+    // 1... basket asset     (uses weighted average price)
+    // 2... index asset      (uses uniswap oracle to get supply and price and calculates supply * price / divisor)
+    // 3 .. sqrt index asset (uses uniswap oracle to get supply and price and calculates sqrt(supply * price) / divisor)
     uint8 public _assetType;
 
     // the address of the collateral contract factory
@@ -136,8 +140,21 @@ contract Conjure is IERC20, ReentrancyGuard {
     }
 
     /**
-    * @dev Public init function to set up the contract with pricing sources
-    *
+     * @dev init function which will set up the price finding for the contract
+     * can only be called once
+     *
+     * @param mintingFee_ the minting fee for the later synths mints
+     * @param assetType_ the asset type of the conjure asset
+     * @param divisorRatio_ array to hold the c-ratio at position 0 and the divisor at position 1
+     * workaround of stack too deep
+     * @param inverse_ the indication if the asset is an inverse asset
+     * @param oracleAddresses_ the array representing the oracle addresses
+     * @param oracleTypes_ the array representing the oracle types
+     * @param signatures_ the array representing the signatures
+     * @param calldata_ the array representing the calldata
+     * @param values_ the array representing the values
+     * @param weights_ the array representing the weights
+     * @param decimals_ the array representing the decimals
     */
     function init(
         uint256 mintingFee_,
@@ -158,6 +175,7 @@ contract Conjure is IERC20, ReentrancyGuard {
         require(_inited == false);
         require(divisorRatio_[0] != 0);
 
+        // mint new EtherCollateral contract
         _collateralContract = IEtherCollateralFactory(_collateralFactory).EtherCollateralMint(
             payable(address(this)),
                 _owner,
@@ -191,8 +209,10 @@ contract Conjure is IERC20, ReentrancyGuard {
     }
 
     /**
-    * @dev Public burn function can only be called from the collateral contract
-    *
+     * @dev lets the EtherCollateral contract instance burn synths
+     *
+     * @param account the account address where the synths should be burned to
+     * @param amount the amount to be burned
     */
     function burn(address account, uint amount) public {
         require(msg.sender == _collateralContract);
@@ -200,8 +220,10 @@ contract Conjure is IERC20, ReentrancyGuard {
     }
 
     /**
-    * @dev Public mint function can only be called from the collateral contract
-    *
+     * @dev lets the EtherCollateral contract instance mint new synths
+     *
+     * @param account the account address where the synths should be minted to
+     * @param amount the amount to be minted
     */
     function mint(address account, uint amount) public {
         require(msg.sender == _collateralContract);
@@ -209,8 +231,10 @@ contract Conjure is IERC20, ReentrancyGuard {
     }
 
     /**
-    * @dev internal mint function issues tokens to the given account
-    *
+     * @dev Internal function to mint new synths
+     *
+     * @param account the account address where the synths should be minted to
+     * @param amount the amount to be minted
     */
     function _internalIssue(address account, uint amount) internal {
         _balances[account] = _balances[account].add(amount);
@@ -221,8 +245,10 @@ contract Conjure is IERC20, ReentrancyGuard {
     }
 
     /**
-    * @dev internal burn function burns tokens from the given account
-    *
+     * @dev Internal function to burn synths
+     *
+     * @param account the account address where the synths should be burned to
+     * @param amount the amount to be burned
     */
     function _internalBurn(address account, uint amount) internal {
         _balances[account] = _balances[account].sub(amount);
@@ -233,8 +259,10 @@ contract Conjure is IERC20, ReentrancyGuard {
     }
 
     /**
-     * @dev lets the owner change the owner
-     */
+     * @dev lets the owner change the contract owner
+     *
+     * @param _newOwner the new owner address of the contract
+    */
     function changeOwner(address payable _newOwner) public {
         require(msg.sender == _owner);
         address oldOwner = _owner;
@@ -243,8 +271,8 @@ contract Conjure is IERC20, ReentrancyGuard {
     }
 
     /**
-     * @dev lets the owner collect the collected fees
-     */
+     * @dev lets the owner collect the fees accrued
+    */
     function collectFees() public {
         require(msg.sender == _owner);
         uint256 contractBalalance = address(this).balance;
@@ -253,7 +281,10 @@ contract Conjure is IERC20, ReentrancyGuard {
     }
 
     /**
-    * Returns the latest price of an oracle asset
+     * @dev gets the latest price of an oracle asset
+     * uses chainlink oralces to get the price
+     *
+     * @return the current asset price
     */
     function getLatestPrice(AggregatorV3Interface priceFeed) internal view returns (int) {
         (
@@ -267,7 +298,9 @@ contract Conjure is IERC20, ReentrancyGuard {
     }
 
     /**
-     * Gets the ETH USD price from chainlink oracle
+     * @dev gets the latest ETH USD Price from the given oracle
+     *
+     * @return the current eth usd price
     */
     function getLatestETHUSDPrice() public view returns (int) {
 
@@ -288,7 +321,11 @@ contract Conjure is IERC20, ReentrancyGuard {
     }
 
     /**
-    * quicksort implementation
+    * @dev implementation of a quicksort algorithm
+    *
+    * @param arr the array to be sorted
+    * @param left the left outer bound element to start the sort
+    * @param right the right outer bound element to stop the sort
     */
     function quickSort(uint[] memory arr, int left, int right) public pure {
         int i = left;
@@ -311,20 +348,24 @@ contract Conjure is IERC20, ReentrancyGuard {
     }
 
     /**
-    * Avg implementation
+    * @dev implementation to get the average value of an array
+    *
+    * @param arr the array to be averaged
+    * @return the (weighted) average price of an asset
     */
     function getAverage(uint[] memory arr) internal view returns (uint) {
         uint sum = 0;
 
+        // do the sum of all array values
         for (uint i = 0; i < arr.length; i++) {
             sum += arr[i];
         }
 
-        // if we dont have any weights
+        // if we dont have any weights (single asset with even array members)
         if (_assetType == 0) {
             return (sum / arr.length);
         }
-        // index pricing
+        // index pricing we do division by divisor
         if (_assetType == 2) {
             return sum / _indexdivisor;
         }
@@ -332,19 +373,27 @@ contract Conjure is IERC20, ReentrancyGuard {
             return sum / _indexdivisor;
         }
 
-        // divide by total weight
+        // divide by 100 cause the weights sum up to 100 and divide by the divisor if set (defaults to 1)
         return ((sum / 100) / _indexdivisor);
     }
 
     /**
-    * Sort Function
+    * @dev sort implementation which calls the quickSort function
+    *
+    * @param data the array to be sorted
+    * @return the sorted array
     */
     function sort(uint[] memory data) public pure returns (uint[] memory) {
         quickSort(data, int(0), int(data.length - 1));
         return data;
     }
 
-    // sqrt function
+    /**
+    * @dev implementation of a square rooting algorithm
+    *
+    * @param y the value to be square rooted
+    * @return z the square rooted value
+    */
     function sqrt(uint256 y) internal view returns (uint256 z) {
         if (y > 3) {
             z = y;
@@ -359,12 +408,19 @@ contract Conjure is IERC20, ReentrancyGuard {
         // else z = 0
     }
 
+    /**
+     * @dev gets the latest recorded price of the synth in USD
+     *
+     * @return the last recorded synths price
+    */
     function getLatestPrice() public view returns (uint) {
         return _latestobservedprice;
     }
 
     /**
-    * Returns the price for the arb asset (median price of the 5 assets)
+     * @dev gets the latest price of the synth in USD by calculation
+     *
+     * @return the current synths price
     */
     function getPrice() public returns (uint) {
         // storing all in an array for further processing
@@ -383,6 +439,7 @@ contract Conjure is IERC20, ReentrancyGuard {
                     prices[i] = prices[i] * 10 ** (_maximumDecimals - _oracleData[i].decimals);
                 }
 
+                // if we have a basket asset we use weights provided
                 if (_assetType == 1) {
                     prices[i] = prices[i] * _oracleData[i].weight;
                 }
@@ -417,11 +474,12 @@ contract Conjure is IERC20, ReentrancyGuard {
                     totalsupply = totalsupply * 10 ** (_maximumDecimals - _oracleData[i].decimals);
                 }
 
+                // if we have a basket asset we use weights provided
                 if (_assetType == 1) {
                     prices[i] = prices[i] * _oracleData[i].weight;
                 }
 
-                // index
+                // index use mcap
                 if (_assetType == 2) {
                     prices[i] = (prices[i].mul(totalsupply) / UNIT);
                 }
@@ -462,6 +520,7 @@ contract Conjure is IERC20, ReentrancyGuard {
                     prices[i] = prices[i] * 10 ** (_maximumDecimals - _oracleData[i].decimals);
                 }
 
+                // if we have a basket asset we use weights provided
                 if (_assetType == 1) {
                     prices[i] = prices[i] * _oracleData[i].weight;
                 }
@@ -532,9 +591,9 @@ contract Conjure is IERC20, ReentrancyGuard {
         return getAverage(sorted);
     }
 
-    ///
-    /// ERC20 specific functions
-    ///
+    /**
+     * ERC 20 Specific Functions
+    */
 
     /**
     * fallback function for collection funds

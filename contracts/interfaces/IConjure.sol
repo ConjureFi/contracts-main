@@ -6,10 +6,10 @@ pragma solidity ^0.6.0;
 /// @notice Interface for interacting with the Conjure Contracts
 interface IConjure {
     /**
-     * @dev lets the EtherCollateral contract instance burn new synths
+     * @dev lets the EtherCollateral contract instance burn synths
      *
      * @param account the account address where the synths should be burned to
-     * @param amount the amount to be minted
+     * @param amount the amount to be burned
     */
     function burn(address account, uint amount) external;
 
@@ -38,7 +38,7 @@ interface IConjure {
     /**
      * @dev gets the latest recorded price of the synth in USD
      *
-     * @return the current synths price
+     * @return the last recorded synths price
     */
     function getLatestPrice() external view returns (uint);
 }
