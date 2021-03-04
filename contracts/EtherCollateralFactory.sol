@@ -120,11 +120,11 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
 
     // ========== SETTERS ==========
 
-    /// @param _asset the conjure asset to be linked with the contract
-    /// @param _owner the owner of the the contract
-    /// @param _factoryaddress address of the factory implementation for fee distribution
-    /// @param _mintingfeerate the minting fee
-    /// @param _ratio the custom c-ratio
+    /**
+     * @dev Sets minting fee of the asset
+     *
+     * @param _issueFeeRate the new minting fee
+    */
     function setIssueFeeRate(uint256 _issueFeeRate) external onlyOwner {
         // max 2.5% fee for minting
         require(_issueFeeRate <= 250);
@@ -369,7 +369,6 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
      * @dev Public function to open a new loan in the system
      *
      * @param _loanAmount the amount of synths a user wants to take a loan for
-     * @param msg.value the amount of collateral a user wants to provide
      * @return loanID the ID of the newly created loan
     */
     function openLoan(uint256 _loanAmount)
@@ -450,7 +449,6 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
      *
      * @param account the opener of the loan
      * @param loanID the ID of the loan
-     * @param msg.value the amount of ETH to be provided as extra collateral
     */
     function depositCollateral(address account, uint256 loanID) external payable notPaused {
         require(msg.value > 0, "Deposit amount must be greater than 0");
@@ -521,16 +519,13 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         // Check loan exists and is open
         _checkLoanIsOpen(synthLoan);
 
-        (
-        uint256 loanAmountPaid,
-        uint256 loanAmountAfter
-        ) = _splitInterestLoanPayment(_repayAmount, synthLoan.loanAmount);
+        uint256 loanAmountAfter = synthLoan.loanAmount.sub(_repayAmount);
 
         // burn funds from msg.sender for repaid amount
         syntharb().burn(msg.sender, _repayAmount);
 
         // decrease issued synths
-        totalIssuedSynths = totalIssuedSynths.sub(loanAmountPaid);
+        totalIssuedSynths = totalIssuedSynths.sub(_repayAmount);
 
         // update loan with new total loan amount, record accrued interests
         _updateLoan(synthLoan, loanAmountAfter);
@@ -584,13 +579,8 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         // burn funds from msg.sender for amount to liquidate
         syntharb().burn(msg.sender, amountToLiquidate);
 
-        (uint256 loanAmountPaid,  ) = _splitInterestLoanPayment(
-            amountToLiquidate,
-            synthLoan.loanAmount
-        );
-
         // decrease issued totalIssuedSynths
-        totalIssuedSynths = totalIssuedSynths.sub(loanAmountPaid);
+        totalIssuedSynths = totalIssuedSynths.sub(amountToLiquidate);
 
         // Collateral value to redeem
         uint256 collateralRedeemed = amountToLiquidate.multiplyDecimal(currentprice).divideDecimal(currentethusdprice);
@@ -604,7 +594,7 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         uint256 amountOwed = synthLoan.loanAmount;
 
         // update remaining loanAmount less amount paid and update accrued interests less interest paid
-        _updateLoan(synthLoan, synthLoan.loanAmount.sub(loanAmountPaid));
+        _updateLoan(synthLoan, synthLoan.loanAmount.sub(amountToLiquidate));
 
         // update remaining collateral on loan
         _updateLoanCollateral(synthLoan, synthLoan.collateralAmount.sub(totalCollateralLiquidated));
@@ -630,35 +620,6 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
                 amountToLiquidate,
                 totalCollateralLiquidated
             );
-        }
-    }
-
-    /**
-     * @dev Calculates the amount of the remaining payment and the currently paid loan amount
-     *
-     * @param _paymentAmount the amount which is being repaid
-     * @param _loanAmount the loan amount of the current loan
-     * @return loanAmountPaid the amount which has been covered
-     * @return loanAmountAfter the amount of the loan after the repayment
-    */
-    function _splitInterestLoanPayment(
-        uint256 _paymentAmount,
-        uint256 _loanAmount
-    )
-    internal
-    pure
-    returns (
-        uint256 loanAmountPaid,
-        uint256 loanAmountAfter
-    )
-    {
-        uint256 remainingPayment = _paymentAmount;
-
-        // Remaining amounts - pay down loan amount
-        loanAmountAfter = _loanAmount;
-        if (remainingPayment > 0) {
-            loanAmountAfter = loanAmountAfter.sub(remainingPayment);
-            loanAmountPaid = remainingPayment;
         }
     }
 
@@ -784,6 +745,8 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
 
     /**
      * @dev Increments all global counters after a loan creation
+     *
+     * @return the amount of total loans created
     */
     function _incrementTotalLoansCounter() private returns (uint256) {
         // Increase the total Open loan count
@@ -812,7 +775,7 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
     /**
      * @dev checks if a loan is pen in the system
      *
-     * @param synthLoan the synth loan struct representing the loan
+     * @param _synthLoan the synth loan struct representing the loan
     */
     function _checkLoanIsOpen(SynthLoanStruct memory _synthLoan) internal pure {
         require(_synthLoan.loanID > 0, "Loan does not exist");
