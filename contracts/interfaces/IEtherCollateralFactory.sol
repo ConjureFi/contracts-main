@@ -6,7 +6,8 @@ interface IEtherCollateralFactory {
         address payable asset_,
         address owner_,
         address factoryaddress_,
-        uint256 mintingfeerate_
+        uint256 mintingfeerate_,
+        uint256 ratio_
     )
         external
         returns (address);

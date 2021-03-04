@@ -137,7 +137,8 @@ contract Conjure is IERC20, ReentrancyGuard {
     function init(
         uint256 mintingFee_,
         uint8 assetType_,
-        uint256 indexdivisor_,
+        // pack variables together because of otherwise stack too depp error
+        uint256[2] memory divisorRatio_,
         bool inverse_,
         address[] memory oracleAddresses_,
         uint8[] memory oracleTypes_,
@@ -150,18 +151,19 @@ contract Conjure is IERC20, ReentrancyGuard {
     {
         require(msg.sender == _owner);
         require(_inited == false);
-        require(indexdivisor_ != 0);
+        require(divisorRatio_[0] != 0);
 
         _collateralContract = IEtherCollateralFactory(_collateralFactory).EtherCollateralMint(
             payable(address(this)),
                 _owner,
                 _factoryaddress,
-                mintingFee_
+                mintingFee_,
+                divisorRatio_[1]
         );
 
         _assetType = assetType_;
         _numoracles = oracleAddresses_.length;
-        _indexdivisor = indexdivisor_;
+        _indexdivisor = divisorRatio_[0];
         _inverse = inverse_;
 
         // push the values into the oracle struct for further processing
@@ -181,18 +183,6 @@ contract Conjure is IERC20, ReentrancyGuard {
 
         _deploymentPrice = getPrice();
         _inited = true;
-    }
-
-    function setEthUsdChainlinkOracle(address neworacle) public {
-        require (msg.sender == _owner);
-        AggregatorV3Interface newagg = AggregatorV3Interface(neworacle);
-        ethusdchainlinkoracle = newagg;
-    }
-
-    function setUniswapOracle(address newunioracle) public {
-        require (msg.sender == _owner);
-        UniswapV2OracleInterface newagg = UniswapV2OracleInterface(newunioracle);
-        _uniswapv2oracle = newagg;
     }
 
     /**
@@ -650,7 +640,11 @@ contract Conjure is IERC20, ReentrancyGuard {
         uint256 amount = rawAmount;
 
         if (spender != src && spenderAllowance != uint256(-1)) {
-            uint256 newAllowance = spenderAllowance.sub(amount, "CONJURE::transferFrom: transfer amount exceeds spender allowance");
+            uint256 newAllowance = spenderAllowance.sub(
+                amount,
+                    "CONJURE::transferFrom: transfer amount exceeds spender allowance"
+            );
+
             _allowances[src][spender] = newAllowance;
         }
 

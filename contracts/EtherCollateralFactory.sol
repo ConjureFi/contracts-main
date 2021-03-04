@@ -1,5 +1,5 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.6.0;
-
 pragma experimental ABIEncoderV2;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -88,27 +88,28 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         address payable _asset,
         address _owner,
         address _factoryaddress,
-        uint256 _mintingfeerate
+        uint256 _mintingfeerate,
+        uint256 _ratio
     )
         Owned(_owner)
         public
     {
         arbasset = _asset;
         factoryaddress = _factoryaddress;
-        issueFeeRate = _mintingfeerate;
 
         // max 2.5% fee for minting
         require(_mintingfeerate <= 250);
+
+        // c ratio greater 100 and less or equal 1000
+        require(_ratio <= ONE_THOUSAND, "C-Ratio Too high");
+        require(_ratio > ONE_HUNDRED, "C-Ratio Too low");
+
+        issueFeeRate = _mintingfeerate;
+        collateralizationRatio = _ratio;
+        liquidationRatio = _ratio / 100;
     }
 
     // ========== SETTERS ==========
-
-    function setCollateralizationRatio(uint256 ratio) external onlyOwner {
-        require(ratio <= ONE_THOUSAND, "Too high");
-        require(ratio >= ONE_HUNDRED, "Too low");
-        collateralizationRatio = ratio;
-        emit CollateralizationRatioUpdated(ratio);
-    }
 
     function setIssueFeeRate(uint256 _issueFeeRate) external onlyOwner {
         // max 2.5% fee for minting
@@ -117,21 +118,10 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         emit IssueFeeRateUpdated(issueFeeRate);
     }
 
-    function setMinLoanCollateralSize(uint256 _minLoanCollateralSize) external onlyOwner {
-        minLoanCollateralSize = _minLoanCollateralSize;
-        emit MinLoanCollateralSizeUpdated(minLoanCollateralSize);
-    }
-
     function setAccountLoanLimit(uint256 _loanLimit) external onlyOwner {
         require(_loanLimit < ACCOUNT_LOAN_LIMIT_CAP, "Owner cannot set higher than ACCOUNT_LOAN_LIMIT_CAP");
         accountLoanLimit = _loanLimit;
         emit AccountLoanLimitUpdated(accountLoanLimit);
-    }
-
-    function setLiquidationRatio(uint256 _liquidationRatio) external onlyOwner {
-        require(_liquidationRatio > SafeDecimalMath.unit(), "Ratio less than 100%");
-        liquidationRatio = _liquidationRatio;
-        emit LiquidationRatioUpdated(liquidationRatio);
     }
 
     function getContractInfo()
@@ -653,11 +643,8 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
 
     // ========== EVENTS ==========
 
-    event CollateralizationRatioUpdated(uint256 ratio);
-    event LiquidationRatioUpdated(uint256 ratio);
     event InterestRateUpdated(uint256 interestRate);
     event IssueFeeRateUpdated(uint256 issueFeeRate);
-    event MinLoanCollateralSizeUpdated(uint256 minLoanCollateralSize);
     event AccountLoanLimitUpdated(uint256 loanLimit);
     event LoanLiquidationOpenUpdated(bool loanLiquidationOpen);
     event LoanCreated(address indexed account, uint256 loanID, uint256 amount);
@@ -688,13 +675,15 @@ contract EtherCollateralFactory {
         address payable asset_,
         address owner_,
         address factoryaddress_,
-        uint256 mintingfeerate_
+        uint256 mintingfeerate_,
+        uint256 ratio_
     ) public returns (address) {
         EtherCollateral newContract = new EtherCollateral(
             asset_,
             owner_,
             factoryaddress_,
-            mintingfeerate_
+            mintingfeerate_,
+            ratio_
         );
 
         emit NewEtherCollateralContract(address(newContract));
