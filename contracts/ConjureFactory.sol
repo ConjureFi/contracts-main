@@ -112,7 +112,7 @@ contract Conjure is IERC20, ReentrancyGuard {
     //chainlink eth/usd mainnet: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
     //chainlink eth/usd rinkeby: 0x8A753747A1Fa494EC906cE90E9f37563A8AF630e
     AggregatorV3Interface public ethusdchainlinkoracle = AggregatorV3Interface(
-        0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
+        0x8A753747A1Fa494EC906cE90E9f37563A8AF630e
     );
 
     constructor (
@@ -418,11 +418,36 @@ contract Conjure is IERC20, ReentrancyGuard {
     }
 
     /**
-     * @dev gets the latest price of the synth in USD by calculation
+     * @dev gets the latest price of the synth in USD by calculation and write the chackpoints for view functions
      *
      * @return the current synths price
     */
     function getPrice() public returns (uint) {
+        uint256 returnPrice = getInternalPrice();
+
+        // if it is an inverse asset we do price = _deploymentPrice - (curent price - _deploymentPrice)
+        // --> 2 * deploymentprice - current price
+        // but only if the asset is inited otherwise we return the normal price calculation
+        if (_inverse && _inited) {
+            if (_deploymentPrice.mul(2) <= returnPrice) {
+                returnPrice = 0;
+            }
+
+            returnPrice = _deploymentPrice.mul(2).sub(returnPrice);
+        }
+
+        _latestobservedprice = returnPrice;
+        _latestobservedtime = block.timestamp;
+
+        return returnPrice;
+    }
+
+    /**
+     * @dev gets the latest price of the synth in USD by calculation --> internal calculation
+     *
+     * @return the current synths price
+    */
+    function getInternalPrice() internal returns (uint) {
         // storing all in an array for further processing
         uint[] memory prices = new uint[](_oracleData.length);
 
@@ -537,17 +562,6 @@ contract Conjure is IERC20, ReentrancyGuard {
             if (modulo == 1) {
                 uint sizer = (sorted.length + 1) / 2;
 
-                _latestobservedprice = sorted[sizer-1];
-                _latestobservedtime = block.timestamp;
-
-                if (_inverse && _inited) {
-                    if (sorted[sizer-1] <= _deploymentPrice.mul(2)) {
-                        return 0;
-                    }
-
-                    return _deploymentPrice.mul(2).sub(sorted[sizer-1]);
-                }
-
                 return sorted[sizer-1];
             // take average of the 2 most inner numbers
             } else {
@@ -561,33 +575,11 @@ contract Conjure is IERC20, ReentrancyGuard {
                 sortedmin[0] = arrsize1;
                 sortedmin[1] = arrsize2;
 
-                _latestobservedprice = getAverage(sortedmin);
-                _latestobservedtime = block.timestamp;
-
-                if (_inverse && _inited) {
-                    if (getAverage(sortedmin) <= _deploymentPrice.mul(2)) {
-                        return 0;
-                    }
-
-                    return _deploymentPrice.mul(2).sub(getAverage(sortedmin));
-                }
-
                 return getAverage(sortedmin);
             }
         }
 
-        /// else return avarage for arb assets
-        _latestobservedprice = getAverage(sorted);
-        _latestobservedtime = block.timestamp;
-
-        if (_inverse && _inited) {
-            if (getAverage(sorted) <= _deploymentPrice.mul(2)) {
-                return 0;
-            }
-
-            return _deploymentPrice.mul(2).sub(getAverage(sorted));
-        }
-
+        // else return avarage for arb assets
         return getAverage(sorted);
     }
 
