@@ -13,6 +13,10 @@ import "./Pausable.sol";
 import "./interfaces/IConjure.sol";
 import "./interfaces/IConjureFactory.sol";
 
+/// @author Conjure Finance Team
+/// @title EtherCollateral
+/// @notice Contract to create a collateral system for conjure
+/// @dev Fork of https://github.com/Synthetixio/synthetix/blob/develop/contracts/EtherCollateralsUSD.sol and adopted
 contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;
@@ -84,6 +88,11 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
     address public factoryaddress;
 
     // ========== CONSTRUCTOR ==========
+    /// @param _asset the conjure asset to be linked with the contract
+    /// @param _owner the owner of the the contract
+    /// @param _factoryaddress address of the factory implementation for fee distribution
+    /// @param _mintingfeerate the minting fee
+    /// @param _ratio the custom c-ratio
     constructor(
         address payable _asset,
         address _owner,
@@ -111,6 +120,11 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
 
     // ========== SETTERS ==========
 
+    /// @param _asset the conjure asset to be linked with the contract
+    /// @param _owner the owner of the the contract
+    /// @param _factoryaddress address of the factory implementation for fee distribution
+    /// @param _mintingfeerate the minting fee
+    /// @param _ratio the custom c-ratio
     function setIssueFeeRate(uint256 _issueFeeRate) external onlyOwner {
         // max 2.5% fee for minting
         require(_issueFeeRate <= 250);
@@ -118,12 +132,31 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         emit IssueFeeRateUpdated(issueFeeRate);
     }
 
+    /**
+     * @dev Sets the account loan limit to the desired value
+     * array indicating which tokens had their prices updated.
+     *
+     * @param _loanLimit the new account loan limit
+    */
     function setAccountLoanLimit(uint256 _loanLimit) external onlyOwner {
         require(_loanLimit < ACCOUNT_LOAN_LIMIT_CAP, "Owner cannot set higher than ACCOUNT_LOAN_LIMIT_CAP");
         accountLoanLimit = _loanLimit;
         emit AccountLoanLimitUpdated(accountLoanLimit);
     }
 
+    /**
+     * @dev Gets all the contract information currently in use
+     * array indicating which tokens had their prices updated.
+     *
+     * @return _collateralizationRatio the current C-Ratio
+     * @return _issuanceRatio the percentage of 100/ C-ratio e.g. 100/150 = 0.6666666667
+     * @return _issueFeeRate the minting fee for a new loan
+     * @return _minLoanCollateralSize the minimum loan collateral value
+     * @return _totalIssuedSynths the total of all isued synths
+     * @return _totalLoansCreated the total of all loans created
+     * @return _totalOpenLoanCount the total of open loans
+     * @return _ethBalance the current balance of the contract
+    */
     function getContractInfo()
     external
     view
@@ -148,13 +181,22 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         _ethBalance = address(this).balance;
     }
 
-    // returns value of 100 / collateralizationRatio.
-    // e.g. 100/150 = 0.6666666667
+    /**
+     * @dev Gets the value of of 100 / collateralizationRatio.
+     * e.g. 100/150 = 0.6666666667
+     *
+    */
     function issuanceRatio() public view returns (uint256) {
         // this rounds so you get slightly more rather than slightly less
         return ONE_HUNDRED.divideDecimalRound(collateralizationRatio);
     }
 
+    /**
+     * @dev Gets the amount of synths which can be issued given a certain loan amount
+     *
+     * @param collateralAmount the given ETH amount
+     * @return the amount of synths which can be minted with the given collateral amount
+    */
     function loanAmountFromCollateral(uint256 collateralAmount) public returns (uint256) {
         uint currentprice = IConjure(arbasset).getPrice();
         uint currentethusdprice = uint(IConjure(arbasset).getLatestETHUSDPrice());
@@ -165,6 +207,12 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         .divideDecimal(currentprice);
     }
 
+    /**
+     * @dev Gets the collateral amount needed (in ETH) to mint a given amount of synths
+     *
+     * @param loanAmount the given loan amount
+     * @return the amount of collateral (in ETH) needed to open a loan for the synth amount
+    */
     function collateralAmountForLoan(uint256 loanAmount) public returns (uint256) {
         uint currentprice = IConjure(arbasset).getPrice();
         uint currentethusdprice = uint(IConjure(arbasset).getLatestETHUSDPrice());
@@ -175,6 +223,13 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         .divideDecimalRound(ONE_HUNDRED);
     }
 
+    /**
+     * @dev Gets the minting fee given the account address and the loanID
+     *
+     * @param _account the opener of the loan
+     * @param _loanID the loan id
+     * @return the minting fee of the loan
+    */
     function getMintingFee(address _account, uint256 _loanID) external view returns (uint256) {
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
@@ -182,11 +237,20 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
     }
 
     /**
+    * @dev Gets the amount to liquidate which can potentially fix the c ratio given this formula:
      * r = target issuance ratio
      * D = debt balance
      * V = Collateral
      * P = liquidation penalty
      * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
+     *
+     * If the C-Ratio is greater than Liquidation Ratio + Penalty in % then the C-Ratio can be fixed
+     * otherwise a greater number is returned and the debttoCover from the calling function is used
+     *
+     * @param debtBalance the amount of the loan or debt to calculate in USD
+     * @param collateral the amount of the collateral in USD
+     *
+     * @return the amount to liquidate to fix the C-Ratio if possible
      */
     function calculateAmountToLiquidate(uint debtBalance, uint collateral) public view returns (uint) {
         uint unit = SafeDecimalMath.unit();
@@ -198,6 +262,12 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         return dividend.divideDecimal(divisor);
     }
 
+    /**
+     * @dev Gets all open loans by a given account address
+     *
+     * @param _account the opener of the loans
+     * @return all open loans by ID in form of an array
+    */
     function openLoanIDsByAccount(address _account) external view returns (uint256[] memory) {
         SynthLoanStruct[] memory synthLoans = accountsSynthLoans[_account];
 
@@ -221,6 +291,19 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         return _result;
     }
 
+    /**
+     * @dev Gets all details about a certain loan
+     *
+     * @param _account the opener of the loans
+     * @param _loanID the ID of a given loan
+     * @return account the opener of the loan
+     * @return collateralAmount the amount of collateral in ETH
+     * @return loanAmount the loan amount
+     * @return timeCreated the time the loan was initially created
+     * @return loanID the ID of the loan
+     * @return timeClosed the closure time of the loan (if closed)
+     * @return totalFees the minting fee of the loan
+    */
     function getLoan(address _account, uint256 _loanID)
     external
     view
@@ -244,6 +327,13 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         totalFees = synthLoan.mintingFee;
     }
 
+    /**
+     * @dev Gets the current C-Ratio of a loan
+     *
+     * @param _account the opener of the loan
+     * @param _loanID the loan ID
+     * @return loanCollateralRatio the current C-Ratio of the loan
+    */
     function getLoanCollateralRatio(address _account, uint256 _loanID) external view returns (uint256 loanCollateralRatio) {
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
@@ -251,6 +341,13 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         (loanCollateralRatio,  ) = _loanCollateralRatio(synthLoan);
     }
 
+    /**
+     * @dev Gets the current C-Ratio of a loan by _loan struct
+     *
+     * @param _loan the loan struct
+     * @return loanCollateralRatio the current C-Ratio of the loan
+     * @return collateralValue the current value of the collateral in USD
+    */
     function _loanCollateralRatio(SynthLoanStruct memory _loan)
     internal
     view
@@ -268,6 +365,13 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
 
     // ========== PUBLIC FUNCTIONS ==========
 
+    /**
+     * @dev Public function to open a new loan in the system
+     *
+     * @param _loanAmount the amount of synths a user wants to take a loan for
+     * @param msg.value the amount of collateral a user wants to provide
+     * @return loanID the ID of the newly created loan
+    */
     function openLoan(uint256 _loanAmount)
     external
     payable
@@ -330,11 +434,24 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         emit LoanCreated(msg.sender, loanID, _loanAmount);
     }
 
+    /**
+     * @dev Function to close a loan
+     * calls the internal _closeLoan function with the false parameter for liquidation
+     * to mark it as a non liquidation close
+     *
+     * @param loanID the ID of the loan a user wants to close
+    */
     function closeLoan(uint256 loanID) external nonReentrant  {
         _closeLoan(msg.sender, loanID, false);
     }
 
-    // Add ETH collateral to an open loan
+    /**
+     * @dev Add ETH collateral to an open loan
+     *
+     * @param account the opener of the loan
+     * @param loanID the ID of the loan
+     * @param msg.value the amount of ETH to be provided as extra collateral
+    */
     function depositCollateral(address account, uint256 loanID) external payable notPaused {
         require(msg.value > 0, "Deposit amount must be greater than 0");
 
@@ -352,7 +469,13 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         emit CollateralDeposited(account, loanID, msg.value, totalCollateral);
     }
 
-    // Withdraw ETH collateral from an open loan
+    /**
+     * @dev Withdraw ETH collateral from an open loan
+     * the C-Ratio after should not be less than the Liquidation Ratio
+     *
+     * @param loanID the ID of the loan
+     * @param withdrawAmount the amount to withdraw from the current collateral
+    */
     function withdrawCollateral(uint256 loanID, uint256 withdrawAmount) external notPaused nonReentrant  {
         require(withdrawAmount > 0, "Amount to withdraw must be greater than 0");
 
@@ -378,6 +501,13 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         emit CollateralWithdrawn(msg.sender, loanID, withdrawAmount, loanAfter.collateralAmount);
     }
 
+    /**
+     * @dev Repay synths to fix C-Ratio
+     *
+     * @param _loanCreatorsAddress the address of the loan creator
+     * @param _loanID the ID of the loan
+     * @param _repayAmount the amount of synths to be repaid
+    */
     function repayLoan(
         address _loanCreatorsAddress,
         uint256 _loanID,
@@ -399,8 +529,8 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         // burn funds from msg.sender for repaid amount
         syntharb().burn(msg.sender, _repayAmount);
 
-        // Send interest paid to fee pool and record loan amount paid
-        _processInterestAndLoanPayment(loanAmountPaid);
+        // decrease issued synths
+        totalIssuedSynths = totalIssuedSynths.sub(loanAmountPaid);
 
         // update loan with new total loan amount, record accrued interests
         _updateLoan(synthLoan, loanAmountAfter);
@@ -408,7 +538,14 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         emit LoanRepaid(_loanCreatorsAddress, _loanID, _repayAmount, loanAmountAfter);
     }
 
-    // Liquidate loans at or below issuance ratio
+    /**
+     * @dev Liquidate loans at or below issuance ratio
+     * if the liquidation amount is greater or equal to the owed amount it will also trigger a closure of the loan
+     *
+     * @param _loanCreatorsAddress the address of the loan creator
+     * @param _loanID the ID of the loan
+     * @param _debtToCover the amount of synths the liquidator wants to cover
+    */
     function liquidateLoan(
         address _loanCreatorsAddress,
         uint256 _loanID,
@@ -452,8 +589,8 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
             synthLoan.loanAmount
         );
 
-        // Send interests paid to fee pool and record loan amount paid
-        _processInterestAndLoanPayment(loanAmountPaid);
+        // decrease issued totalIssuedSynths
+        totalIssuedSynths = totalIssuedSynths.sub(loanAmountPaid);
 
         // Collateral value to redeem
         uint256 collateralRedeemed = amountToLiquidate.multiplyDecimal(currentprice).divideDecimal(currentethusdprice);
@@ -496,6 +633,14 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         }
     }
 
+    /**
+     * @dev Calculates the amount of the remaining payment and the currently paid loan amount
+     *
+     * @param _paymentAmount the amount which is being repaid
+     * @param _loanAmount the loan amount of the current loan
+     * @return loanAmountPaid the amount which has been covered
+     * @return loanAmountAfter the amount of the loan after the repayment
+    */
     function _splitInterestLoanPayment(
         uint256 _paymentAmount,
         uint256 _loanAmount
@@ -517,15 +662,15 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         }
     }
 
-    function _processInterestAndLoanPayment(uint256 loanAmountPaid) internal {
-        // Decrement totalIssuedSynths
-        if (loanAmountPaid > 0) {
-            totalIssuedSynths = totalIssuedSynths.sub(loanAmountPaid);
-        }
-    }
-
     // ========== PRIVATE FUNCTIONS ==========
 
+    /**
+     * @dev Internal function to close open loans
+     *
+     * @param account the account which opened the loan
+     * @param loanID the ID of the loan to close
+     * @param liquidation bool representing if its a user close or a liquidation close
+    */
     function _closeLoan(
         address account,
         uint256 loanID,
@@ -564,6 +709,13 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         emit LoanClosed(account, loanID);
     }
 
+    /**
+     * @dev gets a loan struct from the storage
+     *
+     * @param account the account which opened the loan
+     * @param loanID the ID of the loan to close
+     * @return the loan struct given the input parameters
+    */
     function _getLoanFromStorage(address account, uint256 loanID) private view returns (SynthLoanStruct memory) {
         SynthLoanStruct[] memory synthLoans = accountsSynthLoans[account];
         for (uint256 i = 0; i < synthLoans.length; i++) {
@@ -573,6 +725,12 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         }
     }
 
+    /**
+     * @dev updates the loan amount of a loan
+     *
+     * @param _synthLoan the synth loan struct representing the loan
+     * @param _newLoanAmount the new loan amount to update the loan
+    */
     function _updateLoan(
         SynthLoanStruct memory _synthLoan,
         uint256 _newLoanAmount
@@ -586,6 +744,12 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         }
     }
 
+    /**
+     * @dev updates the collateral amount of a loan
+     *
+     * @param _synthLoan the synth loan struct representing the loan
+     * @param _newCollateralAmount the new collateral amount to update the loan
+    */
     function _updateLoanCollateral(SynthLoanStruct memory _synthLoan, uint256 _newCollateralAmount)
     private
     returns (SynthLoanStruct memory) {
@@ -599,6 +763,11 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         }
     }
 
+    /**
+     * @dev records the closure of a loan
+     *
+     * @param synthLoan the synth loan struct representing the loan
+    */
     function _recordLoanClosure(SynthLoanStruct memory synthLoan) private {
         // Get storage pointer to the accounts array of loans
         SynthLoanStruct[] storage synthLoans = accountsSynthLoans[synthLoan.account];
@@ -613,6 +782,9 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         totalOpenLoanCount = totalOpenLoanCount.sub(1);
     }
 
+    /**
+     * @dev Increments all global counters after a loan creation
+    */
     function _incrementTotalLoansCounter() private returns (uint256) {
         // Increase the total Open loan count
         totalOpenLoanCount = totalOpenLoanCount.add(1);
@@ -622,6 +794,13 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         return totalLoansCreated;
     }
 
+    /**
+     * @dev calculates the minting fee given the 100+ x% of eth collateral and returns x
+     * e.g. input 1.02 ETH fee is set to 2% returns 0.02 ETH as the minting fee
+     *
+     * @param _ethAmount the amount of eth of the collateral
+     * @param mintingFee the fee which is being distributed to the creator and the factory
+    */
     function _calculateMintingFee(uint256 _ethAmount) private view returns (uint256 mintingFee) {
         if (issueFeeRate == 0) {
             mintingFee = 0;
@@ -630,6 +809,11 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         }
     }
 
+    /**
+     * @dev checks if a loan is pen in the system
+     *
+     * @param synthLoan the synth loan struct representing the loan
+    */
     function _checkLoanIsOpen(SynthLoanStruct memory _synthLoan) internal pure {
         require(_synthLoan.loanID > 0, "Loan does not exist");
         require(_synthLoan.timeClosed == 0, "Loan already closed");
@@ -637,6 +821,9 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
 
     /* ========== INTERNAL VIEWS ========== */
 
+    /**
+     * @dev Gets the interface of the synthetic asset
+    */
     function syntharb() internal view returns (IConjure) {
         return IConjure(arbasset);
     }
@@ -663,13 +850,23 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
 }
 
 
+/// @author Conjure Finance Team
+/// @title EtherCollateralFactory
+/// @notice Factory contract to create new instances of EtherCollateral
 contract EtherCollateralFactory {
     event NewEtherCollateralContract(address deployed);
 
     constructor() public {}
 
     /**
-     * @dev lets anyone mint a new CONJURE contract
+     * @dev lets anyone mint a new EtherCollateral contract
+     *
+     * @param asset_ the synthetic assets address
+     * @param owner_ the owner of the contract
+     * @param factoryaddress_ the address of the factory implementation for fee distribution
+     * @param mintingfeerate_ the minting fee
+     * @param ratio_ the C-Ratio to be used in the contract
+     * @return The address of the newly minted EtherCollateral contract
     */
     function EtherCollateralMint(
         address payable asset_,
