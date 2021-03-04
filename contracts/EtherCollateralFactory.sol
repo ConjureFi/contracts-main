@@ -793,7 +793,6 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
 
     // ========== EVENTS ==========
 
-    event InterestRateUpdated(uint256 interestRate);
     event IssueFeeRateUpdated(uint256 issueFeeRate);
     event AccountLoanLimitUpdated(uint256 loanLimit);
     event LoanLiquidationOpenUpdated(bool loanLiquidationOpen);

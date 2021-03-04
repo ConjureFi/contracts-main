@@ -11,52 +11,55 @@ import "./lib/FixedPoint.sol";
 import "./interfaces/IEtherCollateralFactory.sol";
 import "./interfaces/UniswapV2OracleInterface.sol";
 
+/// @author Conjure Finance Team
+/// @title Conjure
+/// @notice Contract to define and track the price of an arbitrary synth
 contract Conjure is IERC20, ReentrancyGuard {
 
-    /// @notice using Openzeppelin contracts for SafeMath and Address
+    // using Openzeppelin contracts for SafeMath and Address
     using SafeMath for uint256;
     using Address for address;
     using FixedPoint for FixedPoint.uq112x112;
     using FixedPoint for FixedPoint.uq144x112;
 
-    /// @notice presenting the total supply
+    // presenting the total supply
     uint256 private _totalSupply;
 
-    /// @notice representing the name of the token
+    // representing the name of the token
     string private _name;
 
-    /// @notice representing the symbol of the token
+    // representing the symbol of the token
     string private _symbol;
 
-    /// @notice representing the decimals of the token
+    // representing the decimals of the token
     uint8 private immutable _decimals = 18;
 
-    /// @notice a record of balance of a specific account by address
+    // a record of balance of a specific account by address
     mapping(address => uint256) private _balances;
 
-    /// @notice a record of allowances for a specific address by address to address mapping
+    // a record of allowances for a specific address by address to address mapping
     mapping(address => mapping(address => uint256)) private _allowances;
 
-    /// @notice the owner and creator of the contract
+    // the owner and creator of the contract
     address payable public _owner;
 
-    /// @notice the owner of the CONJURE factory
+    /// the owner of the ConjureFactory
     address public _factoryaddress;
 
-    /// @notice the type of the arb asset (single asset, arb asset)
-    /// 0... single, 1... arb, 2... index mcap, 3 ... sqrt mcap
+    // the type of the arb asset (single asset, arb asset)
+    // 0... single, 1... arb, 2... index mcap, 3 ... sqrt mcap
     uint8 public _assetType;
 
-    /// @notice the address of the collateral contract factory
+    // the address of the collateral contract factory
     address public _collateralFactory;
 
-    /// @notice the address of the collateral contract
+    // the address of the collateral contract
     address public _collateralContract;
 
-    /// @notice shows the init state of the contract
+    // shows the init state of the contract
     bool public _inited;
 
-    /// @notice struct for oracles
+    // struct for oracles
     struct _oracleStruct {
         address oracleaddress;
         /// 0... chainlink, 1... uniswap twap, 2... custom
@@ -68,43 +71,45 @@ contract Conjure is IERC20, ReentrancyGuard {
         uint256 values;
     }
 
-    /// @notice array for oracles
+    // array for oracles
     _oracleStruct[] public _oracleData;
 
-    /// @notice number of aracles
+    // number of aracles
     uint256 public _numoracles;
 
-    /// @notice deployed uniswap v2 oracle instance
+    //e deployed uniswap v2 oracle instance
     UniswapV2OracleInterface public _uniswapv2oracle;
 
-    /// @notice the latest observed price
+    // the latest observed price
     uint256 public _latestobservedprice;
 
-    /// @notice the latest observed price timestamp
+    // the latest observed price timestamp
     uint256 public _latestobservedtime;
 
-    /// @notice the divisor for the index
+    // the divisor for the index
     uint256 public _indexdivisor = 1;
 
-    /// @notice the modifier if the asset type is an inverse type
+    // the modifier if the asset type is an inverse type
     bool public _inverse = false;
 
-    /// @notice the modifier if the asset type is an inverse type
+    // the modifier if the asset type is an inverse type
     uint256  public _deploymentPrice;
 
-    /// @notice constant for hourly observation
+    // constant for hourly observation
     uint256 HOUR = 3600;
 
-    /// @notice maximum decimal size for the used prices
+    // maximum decimal size for the used prices
     uint256 public _maximumDecimals = 18;
 
-    /* The number representing 1.0. */
+    // The number representing 1.0
     uint public  UNIT = 10**uint(_maximumDecimals);
 
-    /// @notice the eth usd price feed chainlink oracle address
+    // the eth usd price feed chainlink oracle address
     //chainlink eth/usd mainnet: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
     //chainlink eth/usd rinkeby: 0x8A753747A1Fa494EC906cE90E9f37563A8AF630e
-    AggregatorV3Interface public ethusdchainlinkoracle = AggregatorV3Interface(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
+    AggregatorV3Interface public ethusdchainlinkoracle = AggregatorV3Interface(
+        0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
+    );
 
     constructor (
         string memory name_,
@@ -703,6 +708,10 @@ contract Conjure is IERC20, ReentrancyGuard {
     event Burned(address indexed account, uint value);
 }
 
+
+/// @author Conjure Finance Team
+/// @title ConjureFactory
+/// @notice Factory contract to create new instances of Conjure
 contract ConjureFactory {
     event NewConjureContract(address deployed);
     event FactoryOwnerChanged(address newowner);
@@ -713,13 +722,25 @@ contract ConjureFactory {
         factoryOwner = msg.sender;
     }
 
+    /**
+     * @dev gets the address of the current factory owner
+     *
+     * @return the address of the factory owner
+    */
     function getFactoryOwner() public view returns (address payable) {
         return factoryOwner;
     }
 
     /**
-     * @dev lets anyone mint a new CONJURE contract
-     */
+     * @dev lets anyone mint a new Conjure contract
+     *
+     * @param name_ the name of the conjure asset
+     * @param symbol_ the symbol of the conjure asset
+     * @param owner_ the owner of the conjure asset
+     * @param uniswapv2oracle_ the uniswap oracle
+     * @param collateralfactory_ the address of the EtherCollateralFactory
+     * @return The address of the newly minted Conjure contract
+    */
     function ConjureMint(
         string memory name_,
         string memory symbol_,
@@ -744,8 +765,10 @@ contract ConjureFactory {
     }
 
     /**
-     * @dev Lets the Factory Owner change the current owner
-     */
+     * @dev lets the owner change the ownership to another address
+     *
+     * @param newOwner the address of the new owner
+    */
     function newFactoryOwner(address payable newOwner) public {
         require(msg.sender == factoryOwner);
         factoryOwner = newOwner;
