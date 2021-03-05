@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import "./lib/FixedPoint.sol";
 import "./interfaces/IEtherCollateralFactory.sol";
+import "./interfaces/IEtherCollateral.sol";
 import "./interfaces/UniswapV2OracleInterface.sol";
 import "./EtherCollateralFactory.sol";
 
@@ -438,6 +439,12 @@ contract Conjure is IERC20, ReentrancyGuard {
 
         _latestobservedprice = returnPrice;
         _latestobservedtime = block.timestamp;
+
+        // if price reaches 0 we close the collateral contract and no more loans can be opened
+        if (returnPrice <= 0)
+        {
+            IEtherCollateral(_collateralContract).setAssetClosed();
+        }
 
         return returnPrice;
     }

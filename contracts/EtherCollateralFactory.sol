@@ -9,7 +9,6 @@ import {SafeDecimalMath} from "./SafeDecimalMath.sol";
 
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./Owned.sol";
-import "./Pausable.sol";
 import "./interfaces/IConjure.sol";
 import "./interfaces/IConjureFactory.sol";
 
@@ -17,7 +16,7 @@ import "./interfaces/IConjureFactory.sol";
 /// @title EtherCollateral
 /// @notice Contract to create a collateral system for conjure
 /// @dev Fork of https://github.com/Synthetixio/synthetix/blob/develop/contracts/EtherCollateralsUSD.sol and adopted
-contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
+contract EtherCollateral is ReentrancyGuard, Owned {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;
 
@@ -87,6 +86,10 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
     // address of the factory contract for fee distribution
     address public factoryaddress;
 
+    // bool indicating if the asset is closed (no more opening loans and deposits)
+    // this is set to true if the asset price reaches 0
+    bool public assetClosed = false;
+
     // ========== CONSTRUCTOR ==========
     /// @param _asset the conjure asset to be linked with the contract
     /// @param _owner the owner of the the contract
@@ -128,6 +131,11 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
     function setIssueFeeRate(uint256 _issueFeeRate) external onlyOwner {
         // max 2.5% fee for minting
         require(_issueFeeRate <= 250);
+
+        // fee can only be lowered
+        uint256 oldFee = issueFeeRate;
+        require(_issueFeeRate <= oldFee);
+
         issueFeeRate = _issueFeeRate;
         emit IssueFeeRateUpdated(issueFeeRate);
     }
@@ -142,6 +150,17 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
         require(_loanLimit < ACCOUNT_LOAN_LIMIT_CAP, "Owner cannot set higher than ACCOUNT_LOAN_LIMIT_CAP");
         accountLoanLimit = _loanLimit;
         emit AccountLoanLimitUpdated(accountLoanLimit);
+    }
+
+    /**
+     * @dev Sets the assetClosed indicator if loan opening is allowed or not
+     * Called by the Conjure contract if the asset price reaches 0.
+     *
+    */
+    function setAssetClosed() external {
+        require(msg.sender == arbasset);
+        assetClosed = true;
+        emit AssetClosed();
     }
 
     /**
@@ -374,9 +393,10 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
     function openLoan(uint256 _loanAmount)
     external
     payable
-    notPaused
     nonReentrant
     returns (uint256 loanID) {
+        // asset must be open
+        require(!assetClosed, "Asset closed");
         // Require ETH sent to be greater than minLoanCollateralSize
         require(
             msg.value >= minLoanCollateralSize,
@@ -450,7 +470,9 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
      * @param account the opener of the loan
      * @param loanID the ID of the loan
     */
-    function depositCollateral(address account, uint256 loanID) external payable notPaused {
+    function depositCollateral(address account, uint256 loanID) external payable {
+        // asset must be open
+        require(!assetClosed, "Asset closed for deposit collateral");
         require(msg.value > 0, "Deposit amount must be greater than 0");
 
         // Get the loan from storage
@@ -474,7 +496,7 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
      * @param loanID the ID of the loan
      * @param withdrawAmount the amount to withdraw from the current collateral
     */
-    function withdrawCollateral(uint256 loanID, uint256 withdrawAmount) external notPaused nonReentrant  {
+    function withdrawCollateral(uint256 loanID, uint256 withdrawAmount) external nonReentrant  {
         require(withdrawAmount > 0, "Amount to withdraw must be greater than 0");
 
         // Get the loan from storage
@@ -809,6 +831,7 @@ contract EtherCollateral is ReentrancyGuard, Owned, Pausable {
     event CollateralDeposited(address indexed account, uint256 loanID, uint256 collateralAmount, uint256 collateralAfter);
     event CollateralWithdrawn(address indexed account, uint256 loanID, uint256 amountWithdrawn, uint256 collateralAfter);
     event LoanRepaid(address indexed account, uint256 loanID, uint256 repaidAmount, uint256 newLoanAmount);
+    event AssetClosed();
 }
 
 
