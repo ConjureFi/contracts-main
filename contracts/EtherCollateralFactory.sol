@@ -110,7 +110,7 @@ contract EtherCollateral is ReentrancyGuard, Owned {
         factoryaddress = _factoryaddress;
 
         // max 2.5% fee for minting
-        require(_mintingfeerate <= 250);
+        require(_mintingfeerate <= 250, "Minting fee too high");
 
         // c ratio greater 100 and less or equal 1000
         require(_ratio <= ONE_THOUSAND, "C-Ratio Too high");
@@ -130,11 +130,11 @@ contract EtherCollateral is ReentrancyGuard, Owned {
     */
     function setIssueFeeRate(uint256 _issueFeeRate) external onlyOwner {
         // max 2.5% fee for minting
-        require(_issueFeeRate <= 250);
+        require(_issueFeeRate <= 250, "Minting fee too high");
 
         // fee can only be lowered
         uint256 oldFee = issueFeeRate;
-        require(_issueFeeRate <= oldFee);
+        require(_issueFeeRate <= oldFee, "Fee can only be lowered");
 
         issueFeeRate = _issueFeeRate;
         emit IssueFeeRateUpdated(issueFeeRate);
@@ -158,7 +158,7 @@ contract EtherCollateral is ReentrancyGuard, Owned {
      *
     */
     function setAssetClosed() external {
-        require(msg.sender == arbasset);
+        require(msg.sender == arbasset, "Only Conjure contract can call");
         assetClosed = true;
         emit AssetClosed();
     }
@@ -415,7 +415,7 @@ contract EtherCollateral is ReentrancyGuard, Owned {
 
         uint256 ethforloan = collateralAmountForLoan(_loanAmount);
         uint256 mintingFee = _calculateMintingFee(msg.value);
-        require(msg.value >= ethforloan + mintingFee);
+        require(msg.value >= ethforloan + mintingFee, "Too less funds sent to cover fee + collateral");
 
         // Get a Loan ID
         loanID = _incrementTotalLoansCounter();

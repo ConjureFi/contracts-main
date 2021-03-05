@@ -107,7 +107,7 @@ contract Conjure is IERC20, ReentrancyGuard {
     uint256 public _maximumDecimals = 18;
 
     // The number representing 1.0
-    uint public  UNIT = 10**uint(_maximumDecimals);
+    uint public UNIT = 10**uint(_maximumDecimals);
 
     // the eth usd price feed chainlink oracle address
     //chainlink eth/usd mainnet: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
@@ -172,9 +172,9 @@ contract Conjure is IERC20, ReentrancyGuard {
         uint256[] memory decimals_
     ) public
     {
-        require(msg.sender == _owner);
-        require(_inited == false);
-        require(divisorRatio_[0] != 0);
+        require(msg.sender == _owner, "Only owner");
+        require(_inited == false, "Contract already inited");
+        require(divisorRatio_[0] != 0, "Divisor should not be 0");
 
         // mint new EtherCollateral contract
         _collateralContract = IEtherCollateralFactory(_collateralFactory).EtherCollateralMint(
@@ -202,7 +202,7 @@ contract Conjure is IERC20, ReentrancyGuard {
             temp_struct.decimals = decimals_[i];
             _oracleData.push(temp_struct);
 
-            require(decimals_[i] <= 18);
+            require(decimals_[i] <= 18, "Decimals too high");
         }
 
         _deploymentPrice = getPrice();
@@ -216,7 +216,7 @@ contract Conjure is IERC20, ReentrancyGuard {
      * @param amount the amount to be burned
     */
     function burn(address account, uint amount) public {
-        require(msg.sender == _collateralContract);
+        require(msg.sender == _collateralContract, "Only Collateral Contract");
         _internalBurn(account, amount);
     }
 
@@ -227,7 +227,7 @@ contract Conjure is IERC20, ReentrancyGuard {
      * @param amount the amount to be minted
     */
     function mint(address account, uint amount) public {
-        require(msg.sender == _collateralContract);
+        require(msg.sender == _collateralContract, "Only Collateral Contract");
         _internalIssue(account, amount);
     }
 
@@ -275,7 +275,7 @@ contract Conjure is IERC20, ReentrancyGuard {
      * @dev lets the owner collect the fees accrued
     */
     function collectFees() public {
-        require(msg.sender == _owner);
+        require(msg.sender == _owner, "Only owner");
         uint256 contractBalalance = address(this).balance;
 
         _owner.transfer(contractBalalance);
@@ -304,9 +304,7 @@ contract Conjure is IERC20, ReentrancyGuard {
      * @return the current eth usd price
     */
     function getLatestETHUSDPrice() public view returns (int) {
-
         AggregatorV3Interface priceFeed = ethusdchainlinkoracle;
-
         (
         uint80 roundID,
         int price,
@@ -328,7 +326,7 @@ contract Conjure is IERC20, ReentrancyGuard {
     * @param left the left outer bound element to start the sort
     * @param right the right outer bound element to stop the sort
     */
-    function quickSort(uint[] memory arr, int left, int right) public pure {
+    function quickSort(uint[] memory arr, int left, int right) internal pure {
         int i = left;
         int j = right;
         if (i == j) return;
@@ -455,6 +453,7 @@ contract Conjure is IERC20, ReentrancyGuard {
      * @return the current synths price
     */
     function getInternalPrice() internal returns (uint) {
+        require(_oracleData.length > 0, "No oracle feeds supplied");
         // storing all in an array for further processing
         uint[] memory prices = new uint[](_oracleData.length);
 
@@ -542,7 +541,7 @@ contract Conjure is IERC20, ReentrancyGuard {
                 }
 
                 (bool success, bytes memory data) = contractaddress.call{value:callvalue}(callData);
-                require(success);
+                require(success, "Call unsuccessful");
 
                 uint  price = abi.decode(data, (uint));
                 prices[i] = price;
@@ -828,7 +827,7 @@ contract ConjureFactory {
      * @param newOwner the address of the new owner
     */
     function newFactoryOwner(address payable newOwner) public {
-        require(msg.sender == factoryOwner);
+        require(msg.sender == factoryOwner, "Only factory owner");
         factoryOwner = newOwner;
         emit FactoryOwnerChanged(factoryOwner);
     }
