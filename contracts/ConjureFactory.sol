@@ -71,7 +71,7 @@ contract Conjure is IERC20, ReentrancyGuard {
         uint oracleType;
         string signature;
         bytes calldatas;
-        uint256 weight;
+        uint8 weight;
         uint256 decimals;
         uint256 values;
     }
@@ -79,10 +79,10 @@ contract Conjure is IERC20, ReentrancyGuard {
     // array for oracles
     _oracleStruct[] public _oracleData;
 
-    // number of aracles
+    // number of oracles
     uint256 public _numoracles;
 
-    //e deployed uniswap v2 oracle instance
+    // deployed uniswap v2 oracle instance
     UniswapV2OracleInterface public _uniswapv2oracle;
 
     // the latest observed price
@@ -92,22 +92,22 @@ contract Conjure is IERC20, ReentrancyGuard {
     uint256 public _latestobservedtime;
 
     // the divisor for the index
-    uint256 public _indexdivisor = 1;
+    uint256 public _indexdivisor;
 
     // the modifier if the asset type is an inverse type
-    bool public _inverse = false;
+    bool public _inverse;
 
     // the modifier if the asset type is an inverse type
-    uint256  public _deploymentPrice;
+    uint256 public _deploymentPrice;
 
     // constant for hourly observation
-    uint256 HOUR = 3600;
+    uint16 private HOUR = 3600;
 
     // maximum decimal size for the used prices
-    uint256 public _maximumDecimals = 18;
+    uint256 private _maximumDecimals = 18;
 
     // The number representing 1.0
-    uint public UNIT = 10**uint(_maximumDecimals);
+    uint private UNIT = 10**uint(_maximumDecimals);
 
     // the eth usd price feed chainlink oracle address
     //chainlink eth/usd mainnet: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
@@ -168,7 +168,7 @@ contract Conjure is IERC20, ReentrancyGuard {
         string[] memory signatures_,
         bytes[] memory calldata_,
         uint256[] memory values_,
-        uint256[] memory weights_,
+        uint8[] memory weights_,
         uint256[] memory decimals_
     ) public
     {
@@ -190,6 +190,8 @@ contract Conjure is IERC20, ReentrancyGuard {
         _indexdivisor = divisorRatio_[0];
         _inverse = inverse_;
 
+        uint8 weightcheck = 0;
+
         // push the values into the oracle struct for further processing
         for (uint i = 0; i < oracleAddresses_.length; i++) {
             _oracleStruct memory temp_struct;
@@ -203,6 +205,12 @@ contract Conjure is IERC20, ReentrancyGuard {
             _oracleData.push(temp_struct);
 
             require(decimals_[i] <= 18, "Decimals too high");
+            weightcheck += weights_[i];
+        }
+
+        // for basket assets weights must add up to 100
+        if (_assetType == 1) {
+            require(weightcheck == 100, "Weights not 100");
         }
 
         _deploymentPrice = getPrice();
@@ -215,7 +223,7 @@ contract Conjure is IERC20, ReentrancyGuard {
      * @param account the account address where the synths should be burned to
      * @param amount the amount to be burned
     */
-    function burn(address account, uint amount) public {
+    function burn(address account, uint amount) external {
         require(msg.sender == _collateralContract, "Only Collateral Contract");
         _internalBurn(account, amount);
     }
@@ -226,7 +234,7 @@ contract Conjure is IERC20, ReentrancyGuard {
      * @param account the account address where the synths should be minted to
      * @param amount the amount to be minted
     */
-    function mint(address account, uint amount) public {
+    function mint(address account, uint amount) external {
         require(msg.sender == _collateralContract, "Only Collateral Contract");
         _internalIssue(account, amount);
     }
@@ -264,7 +272,7 @@ contract Conjure is IERC20, ReentrancyGuard {
      *
      * @param _newOwner the new owner address of the contract
     */
-    function changeOwner(address payable _newOwner) public {
+    function changeOwner(address payable _newOwner) external {
         require(msg.sender == _owner);
         address oldOwner = _owner;
         _owner = _newOwner;
@@ -274,11 +282,9 @@ contract Conjure is IERC20, ReentrancyGuard {
     /**
      * @dev lets the owner collect the fees accrued
     */
-    function collectFees() public {
+    function collectFees() external {
         require(msg.sender == _owner, "Only owner");
-        uint256 contractBalalance = address(this).balance;
-
-        _owner.transfer(contractBalalance);
+        _owner.transfer(address(this).balance);
     }
 
     /**
@@ -380,7 +386,7 @@ contract Conjure is IERC20, ReentrancyGuard {
     * @param data the array to be sorted
     * @return the sorted array
     */
-    function sort(uint[] memory data) public pure returns (uint[] memory) {
+    function sort(uint[] memory data) internal pure returns (uint[] memory) {
         quickSort(data, int(0), int(data.length - 1));
         return data;
     }
@@ -428,9 +434,9 @@ contract Conjure is IERC20, ReentrancyGuard {
         if (_inverse && _inited) {
             if (_deploymentPrice.mul(2) <= returnPrice) {
                 returnPrice = 0;
+            } else {
+                returnPrice = _deploymentPrice.mul(2).sub(returnPrice);
             }
-
-            returnPrice = _deploymentPrice.mul(2).sub(returnPrice);
         }
 
         _latestobservedprice = returnPrice;

@@ -89,7 +89,7 @@ contract EtherCollateral is ReentrancyGuard, Owned {
 
     // bool indicating if the asset is closed (no more opening loans and deposits)
     // this is set to true if the asset price reaches 0
-    bool public assetClosed = false;
+    bool public assetClosed;
 
     // ========== CONSTRUCTOR ==========
     /// @param _asset the conjure asset to be linked with the contract

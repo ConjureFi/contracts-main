@@ -5,7 +5,7 @@ pragma solidity ^0.7.6;
 /// @title ETHUSDOracle_MOCK
 /// @notice Mock test contract
 /// @notice uses different prices to test pricing and liquidations
-contract ETHUSDOracle_MOCK {
+contract PriceTestOracle_MOCK {
     uint256 public counter;
 
     constructor() {
@@ -18,7 +18,9 @@ contract ETHUSDOracle_MOCK {
     {
         if (counter > 4)
         {
-            answer = 180000000000;
+            answer = 0;
+        } else if (counter == 4) {
+            answer = 400000000000;
         } else {
             answer = 150000000000;
         }
