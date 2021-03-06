@@ -38,4 +38,4 @@ npx hardhat run --network NETWORK scripts/deploy_collateralfactory.js
 
 ### EtherCollateralFactory.sol
 
-![02](media/01_Conjure_Create.PNG)
+![02](classdiagrams/EtherCollateralFactory.svg)
