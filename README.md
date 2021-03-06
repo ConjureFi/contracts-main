@@ -18,7 +18,7 @@ npm install
 ```
 
 ## Testing
-The contracts can be tested by running the corresponding tests from the hardhat test folder
+The contracts can be tested by running the corresponding tests from the hardhat test folder with a total of 51 unit tests.
 ```
 npx hardhat test
 ```
@@ -29,3 +29,13 @@ The 2 Solidity Files which act as the Factory Contracts for all assets can be de
 npx hardhat run --network NETWORK scripts/deploy_conjurefactory.js
 npx hardhat run --network NETWORK scripts/deploy_collateralfactory.js
 ```
+
+## UML Class Diagrams
+
+### ConjureFactory.sol
+
+![01](classdiagrams/ConjureFactory.svg)
+
+### EtherCollateralFactory.sol
+
+![02](media/01_Conjure_Create.PNG)
