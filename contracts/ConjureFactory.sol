@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.0;
+pragma solidity ^0.7.6;
 pragma experimental ABIEncoderV2;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -67,7 +67,7 @@ contract Conjure is IERC20, ReentrancyGuard {
     // struct for oracles
     struct _oracleStruct {
         address oracleaddress;
-        /// 0... chainlink, 1... uniswap twap, 2... custom
+        // 0... chainlink, 1... uniswap twap, 2... custom
         uint oracleType;
         string signature;
         bytes calldatas;
@@ -113,7 +113,7 @@ contract Conjure is IERC20, ReentrancyGuard {
     //chainlink eth/usd mainnet: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
     //chainlink eth/usd rinkeby: 0x8A753747A1Fa494EC906cE90E9f37563A8AF630e
     AggregatorV3Interface public ethusdchainlinkoracle = AggregatorV3Interface(
-        0x8A753747A1Fa494EC906cE90E9f37563A8AF630e
+        0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
     );
 
     constructor (
@@ -124,7 +124,7 @@ contract Conjure is IERC20, ReentrancyGuard {
         address uniswapv2oracle,
         address collateralfactory_
     )
-    public {
+    {
         _owner = owner_;
         _factoryaddress = factoryaddress_;
         _totalSupply = 0;
@@ -289,11 +289,10 @@ contract Conjure is IERC20, ReentrancyGuard {
     */
     function getLatestPrice(AggregatorV3Interface priceFeed) internal view returns (int) {
         (
-        uint80 roundID,
+        ,
         int price,
-        uint startedAt,
-        uint timeStamp,
-        uint80 answeredInRound
+        ,
+        ,
         ) = priceFeed.latestRoundData();
         return price;
     }
@@ -306,15 +305,14 @@ contract Conjure is IERC20, ReentrancyGuard {
     function getLatestETHUSDPrice() public view returns (int) {
         AggregatorV3Interface priceFeed = ethusdchainlinkoracle;
         (
-        uint80 roundID,
+        ,
         int price,
-        uint startedAt,
-        uint timeStamp,
-        uint80 answeredInRound
+        ,
+        ,
         ) = priceFeed.latestRoundData();
 
-        uint decimals = priceFeed.decimals();
-        uint tempprice = uint(price) * 10 ** (_maximumDecimals - decimals);
+        uint returnDecimals = priceFeed.decimals();
+        uint tempprice = uint(price) * 10 ** (_maximumDecimals - returnDecimals);
 
         return int(tempprice);
     }
@@ -624,7 +622,7 @@ contract Conjure is IERC20, ReentrancyGuard {
      * no way affects any of the arithmetic of the contract, including
      * {IERC20-balanceOf} and {IERC20-transfer}.
      */
-    function decimals() public view returns (uint8) {
+    function decimals() public pure returns (uint8) {
         return _decimals;
     }
 
@@ -775,7 +773,7 @@ contract ConjureFactory {
 
     address payable public factoryOwner;
 
-    constructor() public {
+    constructor() {
         factoryOwner = msg.sender;
     }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.0;
+pragma solidity ^0.7.6;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -82,7 +82,7 @@ contract CNJ {
         uint256 amount
     );
 
-    constructor(address account, address minter_, uint256 mintingAllowedAfter_) public {
+    constructor(address account, address minter_, uint256 mintingAllowedAfter_) {
         require(
             mintingAllowedAfter_ >= block.timestamp,
             "Cnj::constructor: minting can only begin after deployment"
@@ -192,7 +192,7 @@ contract CNJ {
         address signatory = ecrecover(digest, v, r, s);
         require(signatory != address(0), "Cnj::permit: invalid signature");
         require(signatory == owner, "Cnj::permit: unauthorized");
-        require(now <= deadline, "Cnj::permit: signature expired");
+        require(block.timestamp <= deadline, "Cnj::permit: signature expired");
 
         allowances[owner][spender] = amount;
 
@@ -266,7 +266,7 @@ contract CNJ {
         address signatory = ecrecover(digest, v, r, s);
         require(signatory != address(0), "Cnj::delegateBySig: invalid signature");
         require(nonce == nonces[signatory]++, "Cnj::delegateBySig: invalid nonce");
-        require(now <= expiry, "Cnj::delegateBySig: signature expired");
+        require(block.timestamp <= expiry, "Cnj::delegateBySig: signature expired");
         return _delegate(signatory, delegatee);
     }
 

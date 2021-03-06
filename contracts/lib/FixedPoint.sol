@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.6.0;
-
+pragma solidity ^0.7.6;
 
 /************************************************************************************************
 From https://github.com/Uniswap/uniswap-lib/blob/master/contracts/libraries/FixedPoint.sol

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.0;
+pragma solidity ^0.7.6;
 pragma experimental ABIEncoderV2;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -23,6 +23,7 @@ contract EtherCollateral is ReentrancyGuard, Owned {
     // ========== CONSTANTS ==========
     uint256 internal constant ONE_THOUSAND = 1e18 * 1000;
     uint256 internal constant ONE_HUNDRED = 1e18 * 100;
+    uint256 internal constant ONE_HUNDRED_TEN = 1e18 * 110;
     uint256 internal constant ACCOUNT_LOAN_LIMIT_CAP = 1000;
 
     // ========== SETTER STATE VARIABLES ==========
@@ -104,7 +105,6 @@ contract EtherCollateral is ReentrancyGuard, Owned {
         uint256 _ratio
     )
         Owned(_owner)
-        public
     {
         arbasset = _asset;
         factoryaddress = _factoryaddress;
@@ -114,7 +114,7 @@ contract EtherCollateral is ReentrancyGuard, Owned {
 
         // c ratio greater 100 and less or equal 1000
         require(_ratio <= ONE_THOUSAND, "C-Ratio Too high");
-        require(_ratio > ONE_HUNDRED, "C-Ratio Too low");
+        require(_ratio > ONE_HUNDRED_TEN, "C-Ratio Too low");
 
         issueFeeRate = _mintingfeerate;
         collateralizationRatio = _ratio;
@@ -578,11 +578,11 @@ contract EtherCollateral is ReentrancyGuard, Owned {
 
         (uint256 collateralRatio, uint256 collateralValue) = _loanCollateralRatio(synthLoan);
 
-        require(collateralRatio < liquidationRatio, "Collateral ratio above liquidation ratio");
-
         // get prices
         uint currentprice = IConjure(arbasset).getPrice();
         uint currentethusdprice = uint(IConjure(arbasset).getLatestETHUSDPrice());
+
+        require(collateralRatio < liquidationRatio, "Collateral ratio above liquidation ratio");
 
         // calculate amount to liquidate to fix ratio including accrued interest
         // multiply the loan amount times current price in usd
@@ -697,13 +697,13 @@ contract EtherCollateral is ReentrancyGuard, Owned {
      *
      * @param account the account which opened the loan
      * @param loanID the ID of the loan to close
-     * @return the loan struct given the input parameters
+     * @return synthLoan the loan struct given the input parameters
     */
-    function _getLoanFromStorage(address account, uint256 loanID) private view returns (SynthLoanStruct memory) {
+    function _getLoanFromStorage(address account, uint256 loanID) private view returns (SynthLoanStruct memory synthLoan) {
         SynthLoanStruct[] memory synthLoans = accountsSynthLoans[account];
         for (uint256 i = 0; i < synthLoans.length; i++) {
             if (synthLoans[i].loanID == loanID) {
-                return synthLoans[i];
+                synthLoan = synthLoans[i];
             }
         }
     }
@@ -732,16 +732,17 @@ contract EtherCollateral is ReentrancyGuard, Owned {
      *
      * @param _synthLoan the synth loan struct representing the loan
      * @param _newCollateralAmount the new collateral amount to update the loan
+     * @return synthLoan the loan struct given the input parameters
     */
     function _updateLoanCollateral(SynthLoanStruct memory _synthLoan, uint256 _newCollateralAmount)
     private
-    returns (SynthLoanStruct memory) {
+    returns (SynthLoanStruct memory synthLoan) {
         // Get storage pointer to the accounts array of loans
         SynthLoanStruct[] storage synthLoans = accountsSynthLoans[_synthLoan.account];
         for (uint256 i = 0; i < synthLoans.length; i++) {
             if (synthLoans[i].loanID == _synthLoan.loanID) {
                 synthLoans[i].collateralAmount = _newCollateralAmount;
-                return synthLoans[i];
+                synthLoan = synthLoans[i];
             }
         }
     }
@@ -841,7 +842,7 @@ contract EtherCollateral is ReentrancyGuard, Owned {
 contract EtherCollateralFactory {
     event NewEtherCollateralContract(address deployed);
 
-    constructor() public {}
+    constructor() {}
 
     /**
      * @dev lets anyone mint a new EtherCollateral contract
