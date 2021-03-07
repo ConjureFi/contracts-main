@@ -39,3 +39,21 @@ npx hardhat run --network NETWORK scripts/deploy_collateralfactory.js
 ### EtherCollateralFactory.sol
 
 ![02](classdiagrams/EtherCollateralFactory.svg)
+
+## Flow Diagrams
+
+### Conjure Functions
+
+![03](flowdiagrams/conjurefunctions.png)
+
+### EtherCollateral Functions
+
+![04](flowdiagrams/ethercollateralfunctions.png)
+
+### Asset Creation
+
+![5](flowdiagrams/assetcreation.png)
+
+### Mint and Burn
+
+![06](flowdiagrams/loancreation.png)
