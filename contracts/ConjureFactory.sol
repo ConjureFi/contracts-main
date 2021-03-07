@@ -113,7 +113,8 @@ contract Conjure is IERC20, ReentrancyGuard {
     //chainlink eth/usd mainnet: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
     //chainlink eth/usd rinkeby: 0x8A753747A1Fa494EC906cE90E9f37563A8AF630e
     AggregatorV3Interface public ethusdchainlinkoracle = AggregatorV3Interface(
-        0x8A753747A1Fa494EC906cE90E9f37563A8AF630e
+        0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
+
     );
 
     constructor (
