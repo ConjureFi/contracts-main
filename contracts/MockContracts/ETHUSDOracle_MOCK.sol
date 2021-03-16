@@ -18,7 +18,8 @@ contract ETHUSDOracle_MOCK {
     {
         if (counter > 4)
         {
-            answer = 180000000000;
+            // set this 10-15% higher than the current eth price
+            answer = 210000000000;
         } else {
             answer = 150000000000;
         }

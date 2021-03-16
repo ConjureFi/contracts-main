@@ -29,7 +29,7 @@ contract EtherCollateral is ReentrancyGuard, Owned {
     // ========== SETTER STATE VARIABLES ==========
 
     // The ratio of Collateral to synths issued
-    uint256 public collateralizationRatio = SafeDecimalMath.unit() * 120;
+    uint256 public collateralizationRatio;
 
     // Minting fee for issuing the synths
     uint256 public issueFeeRate;
@@ -41,7 +41,7 @@ contract EtherCollateral is ReentrancyGuard, Owned {
     uint256 public accountLoanLimit = 50;
 
     // Liquidation ratio when loans can be liquidated
-    uint256 public liquidationRatio = (120 * SafeDecimalMath.unit()) / 100; // 1.2 ratio
+    uint256 public liquidationRatio;
 
     // Liquidation penalty when loans are liquidated. default 10%
     uint256 public liquidationPenalty = SafeDecimalMath.unit() / 10;

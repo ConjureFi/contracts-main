@@ -25,16 +25,16 @@ contract Conjure is IERC20, ReentrancyGuard {
     using FixedPoint for FixedPoint.uq144x112;
 
     // presenting the total supply
-    uint256 private _totalSupply;
+    uint256 internal _totalSupply;
 
     // representing the name of the token
-    string private _name;
+    string internal _name;
 
     // representing the symbol of the token
-    string private _symbol;
+    string internal _symbol;
 
     // representing the decimals of the token
-    uint8 private immutable _decimals = 18;
+    uint8 internal immutable _decimals = 18;
 
     // a record of balance of a specific account by address
     mapping(address => uint256) private _balances;
@@ -100,14 +100,11 @@ contract Conjure is IERC20, ReentrancyGuard {
     // the modifier if the asset type is an inverse type
     uint256 public _deploymentPrice;
 
-    // constant for hourly observation
-    uint16 private HOUR = 3600;
-
     // maximum decimal size for the used prices
     uint256 private _maximumDecimals = 18;
 
     // The number representing 1.0
-    uint private UNIT = 10**uint(_maximumDecimals);
+    uint internal UNIT = 10**18;
 
     // the eth usd price feed chainlink oracle address
     //chainlink eth/usd mainnet: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
@@ -275,9 +272,8 @@ contract Conjure is IERC20, ReentrancyGuard {
     */
     function changeOwner(address payable _newOwner) external {
         require(msg.sender == _owner);
-        address oldOwner = _owner;
         _owner = _newOwner;
-        emit NewOwner(oldOwner, _owner);
+        emit NewOwner(_newOwner);
     }
 
     /**
@@ -364,19 +360,14 @@ contract Conjure is IERC20, ReentrancyGuard {
         for (uint i = 0; i < arr.length; i++) {
             sum += arr[i];
         }
-
         // if we dont have any weights (single asset with even array members)
         if (_assetType == 0) {
             return (sum / arr.length);
         }
         // index pricing we do division by divisor
-        if (_assetType == 2) {
+        if ((_assetType == 2) || (_assetType == 3)) {
             return sum / _indexdivisor;
         }
-        if (_assetType == 3) {
-            return sum / _indexdivisor;
-        }
-
         // divide by 100 cause the weights sum up to 100 and divide by the divisor if set (defaults to 1)
         return ((sum / 100) / _indexdivisor);
     }
@@ -444,8 +435,7 @@ contract Conjure is IERC20, ReentrancyGuard {
         _latestobservedtime = block.timestamp;
 
         // if price reaches 0 we close the collateral contract and no more loans can be opened
-        if (returnPrice <= 0)
-        {
+        if (returnPrice <= 0) {
             IEtherCollateral(_collateralContract).setAssetClosed();
         }
 
@@ -492,11 +482,11 @@ contract Conjure is IERC20, ReentrancyGuard {
                 // since this oracle is using token / eth prices we have to norm it to usd prices
                 uint currentethtusdprice = uint(getLatestETHUSDPrice());
 
-                // grab latest price after update decode
+                // grab latest price after update decode between 0 and 10 days
                 FixedPoint.uq112x112 memory price = _uniswapv2oracle.computeAverageTokenPrice(
                     _oracleData[i].oracleaddress,
                     0,
-                    HOUR * 24 * 10
+                    3600 * 24 * 10
                 );
 
                 prices[i] = price.mul(currentethtusdprice).decode144();
@@ -764,8 +754,7 @@ contract Conjure is IERC20, ReentrancyGuard {
     }
 
     // ========== EVENTS ==========
-    event NewOwner(address oldOwner, address newOwner);
-    event FeeChanged(uint8 oldFee, uint8 newFee);
+    event NewOwner(address newOwner);
     event Issued(address indexed account, uint value);
     event Burned(address indexed account, uint value);
 }
