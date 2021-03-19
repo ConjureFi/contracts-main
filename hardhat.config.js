@@ -2,6 +2,7 @@ require("@nomiclabs/hardhat-waffle");
 require('hardhat-contract-sizer');
 require('dotenv').config()
 require("@nomiclabs/hardhat-etherscan");
+require("solidity-coverage");
 
 /**
  * @type import('hardhat/config').HardhatUserConfig

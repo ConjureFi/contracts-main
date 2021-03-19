@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts\lib\FixedPoint.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../../index.html">all files</a> / <a href="index.html">contracts/lib/</a> FixedPoint.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">0% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>0/13</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">0% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>0/8</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">0% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>0/8</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">0% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>0/13</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line low'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.7.6;
+&nbsp;
+/************************************************************************************************
+From https://github.com/Uniswap/uniswap-lib/blob/master/contracts/libraries/FixedPoint.sol
+&nbsp;
+Copied from the github repository at commit hash 9642a0705fdaf36b477354a4167a8cd765250860.
+&nbsp;
+Modifications:
+- Removed `sqrt` function
+&nbsp;
+Subject to the GPL-3.0 license
+*************************************************************************************************/
+&nbsp;
+&nbsp;
+// a library for handling binary fixed point numbers (https://en.wikipedia.org/wiki/Q_(number_format))
+library FixedPoint {
+    // range: [0, 2**112 - 1]
+    // resolution: 1 / 2**112
+    struct uq112x112 {
+        uint224 _x;
+    }
+&nbsp;
+    // range: [0, 2**144 - 1]
+    // resolution: 1 / 2**112
+    struct uq144x112 {
+        uint _x;
+    }
+&nbsp;
+    uint8 private constant RESOLUTION = 112;
+    uint private constant Q112 = uint(1) &lt;&lt; RESOLUTION;
+    uint private constant Q224 = Q112 &lt;&lt; RESOLUTION;
+&nbsp;
+    // encode a uint112 as a UQ112x112
+<span class="fstat-no" title="function not covered" >    function encode(uint112 x) internal pure returns (uq112x112 memory) {</span>
+<span class="cstat-no" title="statement not covered" >        return uq112x112(uint224(x) &lt;&lt; RESOLUTION);</span>
+    }
+&nbsp;
+    // encodes a uint144 as a UQ144x112
+<span class="fstat-no" title="function not covered" >    function encode144(uint144 x) internal pure returns (uq144x112 memory) {</span>
+<span class="cstat-no" title="statement not covered" >        return uq144x112(uint256(x) &lt;&lt; RESOLUTION);</span>
+    }
+&nbsp;
+    // divide a UQ112x112 by a uint112, returning a UQ112x112
+<span class="fstat-no" title="function not covered" >    function div(uq112x112 memory self, uint112 x) internal pure returns (uq112x112 memory) {</span>
+<span class="cstat-no" title="statement not covered" >        require(x != 0, "FixedPoint: DIV_BY_ZERO")</span>;
+<span class="cstat-no" title="statement not covered" >        return uq112x112(self._x / uint224(x));</span>
+    }
+&nbsp;
+    // multiply a UQ112x112 by a uint, returning a UQ144x112
+    // reverts on overflow
+<span class="fstat-no" title="function not covered" >    function mul(uq112x112 memory self, uint y) internal pure returns (uq144x112 memory) {</span>
+<span class="cstat-no" title="statement not covered" >        uint z;</span>
+<span class="cstat-no" title="statement not covered" >        require(</span>
+            y == 0 || (z = uint(self._x) * y) / y == uint(self._x),
+            "FixedPoint: MULTIPLICATION_OVERFLOW"
+        );
+<span class="cstat-no" title="statement not covered" >        return uq144x112(z);</span>
+    }
+&nbsp;
+    // returns a UQ112x112 which represents the ratio of the numerator to the denominator
+    // equivalent to encode(numerator).div(denominator)
+<span class="fstat-no" title="function not covered" >    function fraction(uint112 numerator, uint112 denominator) internal pure returns (uq112x112 memory) {</span>
+<span class="cstat-no" title="statement not covered" >        require(denominator &gt; 0, "FixedPoint: DIV_BY_ZERO")</span>;
+<span class="cstat-no" title="statement not covered" >        return uq112x112((uint224(numerator) &lt;&lt; RESOLUTION) / denominator);</span>
+    }
+&nbsp;
+    // decode a UQ112x112 into a uint112 by truncating after the radix point
+<span class="fstat-no" title="function not covered" >    function decode(uq112x112 memory self) internal pure returns (uint112) {</span>
+<span class="cstat-no" title="statement not covered" >        return uint112(self._x &gt;&gt; RESOLUTION);</span>
+    }
+&nbsp;
+    // decode a UQ144x112 into a uint144 by truncating after the radix point
+<span class="fstat-no" title="function not covered" >    function decode144(uq144x112 memory self) internal pure returns (uint144) {</span>
+<span class="cstat-no" title="statement not covered" >        return uint144(self._x &gt;&gt; RESOLUTION);</span>
+    }
+&nbsp;
+    // take the reciprocal of a UQ112x112
+<span class="fstat-no" title="function not covered" >    function reciprocal(uq112x112 memory self) internal pure returns (uq112x112 memory) {</span>
+<span class="cstat-no" title="statement not covered" >        require(self._x != 0, "FixedPoint: ZERO_RECIPROCAL")</span>;
+<span class="cstat-no" title="statement not covered" >        return uq112x112(uint224(Q224 / self._x));</span>
+    }
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Fri Mar 19 2021 11:00:23 GMT+0100 (GMT+01:00)
+</div>
+</div>
+<script src="../../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../../sorter.js"></script>
+</body>
+</html>

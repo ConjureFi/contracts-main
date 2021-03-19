@@ -226,7 +226,7 @@ describe("Conjure Pricing Core Tests", function () {
     await conjure.getPrice();
 
     lastprice = await conjure.getLatestPrice()
-    expect(lastprice).to.be.equal("1200000000000000000000");
+    expect(lastprice).to.be.equal("900000000000000000000");
   });
 
   it("Should get the right avg price for an INVERSE single basket with decrease", async function () {

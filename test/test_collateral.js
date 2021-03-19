@@ -311,4 +311,69 @@ describe("EtherCollateral Tests", function () {
     await collateral.connect(addr1).openLoan(amountToBorrow,overrides);
     await expect(collateral.connect(addr1).liquidateLoan(owner.address,5,"1000000000000000000")).to.be.revertedWith("Collateral ratio above liquidation ratio");
   });
+
+  it("Should be able to change the account loan limit", async function () {
+
+    let currentLimit = await collateral.accountLoanLimit();
+    expect(currentLimit).to.be.equal(50);
+
+    await collateral.setAccountLoanLimit(10);
+
+    currentLimit = await collateral.accountLoanLimit();
+    expect(currentLimit).to.be.equal(10);
+
+  });
+
+  it("Should be able to call get contract info", async function () {
+    await collateral.connect(addr1).getContractInfo();
+  });
+
+  it("Should be able to distribute the minting fee", async function () {
+    // deploy conjure factory
+    const CONJURE = await ethers.getContractFactory("Conjure");
+    conjure = await CONJURE.deploy(
+        "NAME",
+        "SYMBOL",
+        owner.address,
+        conjureFactory.address,
+        zeroaddress,
+        collateralFactory.address
+    );
+    await conjure.deployed();
+
+    await conjure.init(
+        100,
+        0,
+        ["1", "150000000000000000000"],
+        false,
+        ["0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"],
+        [0],
+        ["signature1"],
+        [0x00],
+        [0],
+        [100],
+        [8]
+    );
+
+    // get the created contract
+    let return_collateral = await conjure._collateralContract();
+    collateral = await ethers.getContractAt("EtherCollateral", return_collateral)
+
+    // get amount needed
+    const amountToBorrow = "1000000000000000000";
+
+    // send 1.6 eth so 150% c-ratio
+    let overrides = {
+      value: "1600000000000000000"
+    };
+
+    // should get loan for 1 arb asset
+    await collateral.openLoan(amountToBorrow,overrides);
+  });
+
 });
+
+
+
+
+
