@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.6;
+pragma solidity 0.7.6;
 
 /// @author Conjure Finance Team
 /// @title IConjure
@@ -26,14 +26,12 @@ interface IConjure {
      *
      * @return the current eth usd price
     */
-    function getLatestETHUSDPrice() external view returns (int);
+    function getLatestETHUSDPrice() external view returns (uint);
 
     /**
-     * @dev gets the latest price of the synth in USD by calculation
-     *
-     * @return the current synths price
+     * @dev sets the latest price of the synth in USD by calculation
     */
-    function getPrice() external returns (uint);
+    function updatePrice() external;
 
     /**
      * @dev gets the latest recorded price of the synth in USD

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.6;
+pragma solidity 0.7.6;
 
 /// @author Conjure Finance Team
 /// @title IConjureFactory
@@ -7,9 +7,9 @@ pragma solidity ^0.7.6;
 interface IConjureFactory {
 
     /**
-     * @dev gets the current factory owner
+     * @dev gets the current conjure router
      *
-     * @return the current factory owner
+     * @return the current conjure router
     */
-    function getFactoryOwner() external returns (address payable);
+    function getConjureRouter() external returns (address payable);
 }

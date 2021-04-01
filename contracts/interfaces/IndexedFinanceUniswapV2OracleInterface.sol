@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.6;
+pragma solidity 0.7.6;
 pragma experimental ABIEncoderV2;
 
 import "../lib/FixedPoint.sol";
 
-interface UniswapV2OracleInterface {
+interface IndexedFinanceUniswapV2OracleInterface {
     function computeAverageTokenPrice(
         address token, uint256 minTimeElapsed, uint256 maxTimeElapsed
     ) external view returns (FixedPoint.uq112x112 memory);
