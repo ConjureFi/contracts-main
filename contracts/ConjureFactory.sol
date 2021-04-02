@@ -18,7 +18,7 @@ contract ConjureFactory {
     address payable public factoryOwner;
     address public conjureImplementation;
     address public etherCollateralImplementation;
-    address payable conjureRouter;
+    address payable public conjureRouter;
     IERC20 cnj;
 
     constructor(
@@ -41,13 +41,13 @@ contract ConjureFactory {
      * @param name_ the name of the conjure asset
      * @param symbol_ the symbol of the conjure asset
      * @param owner_ the owner of the conjure asset
-     * @param uniswapv2oracle_ the uniswap oracle
+     * @param indexedFinanceUniswapv2oracle_ the uniswap oracle
     */
     function ConjureMint(
         string memory name_,
         string memory symbol_,
         address payable owner_,
-        address uniswapv2oracle_,
+        address indexedFinanceUniswapv2oracle_,
         uint256 mintingFee_,
         uint256 cratio_
     )
@@ -62,7 +62,7 @@ contract ConjureFactory {
             symbol_,
             owner_,
             address(this),
-            uniswapv2oracle_,
+            indexedFinanceUniswapv2oracle_,
             etherCollateral
         );
 
