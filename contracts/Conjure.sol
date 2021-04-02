@@ -46,8 +46,8 @@ contract Conjure is IERC20, ReentrancyGuard {
     // the type of the arb asset (single asset, arb asset)
     // 0... single asset     (uses median price)
     // 1... basket asset     (uses weighted average price)
-    // 2... index asset      (uses uniswap oracle to get supply and price and calculates supply * price / divisor)
-    // 3 .. sqrt index asset (uses uniswap oracle to get supply and price and calculates sqrt(supply * price) / divisor)
+    // 2... index asset      (uses ndx uniswap oracle to get supply and price and calculates supply * price / divisor)
+    // 3 .. sqrt index asset (uses ndx uniswap oracle to get supply and price and calculates sqrt(supply * price) / divisor)
     uint256 public _assetType;
 
     // the address of the collateral contract factory
@@ -99,10 +99,10 @@ contract Conjure is IERC20, ReentrancyGuard {
     uint256 private _maximumDecimals = 18;
 
     // The number representing 1.0
-    uint internal UNIT = 10**18;
+    uint256 internal UNIT = 10**18;
 
     // chainlink aggregator decimals to give back
-    uint internal constant chainLinkReturnDecimals = 8;
+    uint256 internal constant chainLinkReturnDecimals = 8;
 
     // the eth usd price feed chainlink oracle address
     //chainlink eth/usd mainnet: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
@@ -113,8 +113,8 @@ contract Conjure is IERC20, ReentrancyGuard {
 
     // ========== EVENTS ==========
     event NewOwner(address newOwner);
-    event Issued(address indexed account, uint value);
-    event Burned(address indexed account, uint value);
+    event Issued(address indexed account, uint256 value);
+    event Burned(address indexed account, uint256 value);
 
     // only owner modifier
     modifier onlyOwner {
@@ -304,10 +304,7 @@ contract Conjure is IERC20, ReentrancyGuard {
         ,
         ) = ethusdchainlinkoracle.latestRoundData();
 
-
-        uint tempprice = uint(price) * 10 ** (_maximumDecimals - chainLinkReturnDecimals);
-
-        return tempprice;
+        return uint(price) * 10 ** (_maximumDecimals - chainLinkReturnDecimals);
     }
 
     /**
@@ -375,22 +372,22 @@ contract Conjure is IERC20, ReentrancyGuard {
 
     /**
     * @dev implementation of a square rooting algorithm
+    * babylonian method (https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method)
     *
     * @param y the value to be square rooted
     * @return z the square rooted value
     */
-    function sqrt(uint256 y) internal view returns (uint256 z) {
+    function sqrt(uint256 y) internal pure returns (uint256 z) {
         if (y > 3) {
             z = y;
-            uint256 x = (y + 1) / 2;
+            uint256 x = y / 2 + 1;
             while (x < z) {
                 z = x;
-                x = (y.mul(UNIT).div(x) + x) / 2;
+                x = (y / x + x) / 2;
             }
         } else if (y != 0) {
             z = 1;
         }
-        // else z = 0
     }
 
     /**
@@ -458,11 +455,6 @@ contract Conjure is IERC20, ReentrancyGuard {
                 if (_maximumDecimals != _oracleData[i].decimals) {
                     prices[i] = prices[i] * 10 ** (_maximumDecimals - _oracleData[i].decimals);
                 }
-
-                // if we have a basket asset we use weights provided
-                if (_assetType == 1) {
-                    prices[i] = prices[i] * _oracleData[i].weight;
-                }
             }
 
             // uniswap TWAP
@@ -474,6 +466,7 @@ contract Conjure is IERC20, ReentrancyGuard {
                 }
 
                 // grab latest price after update decode between 0 and 10 days
+                // will revert if no price is found
                 FixedPoint.uq112x112 memory price = _indexedFinanceUniswapV2Oracle.computeAverageTokenPrice(
                     _oracleData[i].oracleaddress,
                     0,
@@ -490,11 +483,6 @@ contract Conjure is IERC20, ReentrancyGuard {
                 if (_maximumDecimals != _oracleData[i].decimals) {
                     prices[i] = prices[i] * 10 ** (_maximumDecimals - _oracleData[i].decimals);
                     totalsupply = totalsupply * 10 ** (_maximumDecimals - _oracleData[i].decimals);
-                }
-
-                // if we have a basket asset we use weights provided
-                if (_assetType == 1) {
-                    prices[i] = prices[i] * _oracleData[i].weight;
                 }
 
                 // index use mcap
@@ -533,11 +521,11 @@ contract Conjure is IERC20, ReentrancyGuard {
                 if (_maximumDecimals != _oracleData[i].decimals) {
                     prices[i] = prices[i] * 10 ** (_maximumDecimals - _oracleData[i].decimals);
                 }
+            }
 
-                // if we have a basket asset we use weights provided
-                if (_assetType == 1) {
-                    prices[i] = prices[i] * _oracleData[i].weight;
-                }
+            // if we have a basket asset we use weights provided
+            if (_assetType == 1) {
+                prices[i] = prices[i] * _oracleData[i].weight;
             }
         }
 

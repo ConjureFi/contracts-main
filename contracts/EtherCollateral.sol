@@ -249,13 +249,10 @@ contract EtherCollateral is ReentrancyGuard {
      * @return the amount of synths which can be minted with the given collateral amount
     */
     function loanAmountFromCollateral(uint256 collateralAmount) public view returns (uint256) {
-        uint currentprice = syntharb().getLatestPrice();
-        uint currentethusdprice = syntharb().getLatestETHUSDPrice();
-
         return collateralAmount
         .multiplyDecimal(issuanceRatio())
-        .multiplyDecimal(currentethusdprice)
-        .divideDecimal(currentprice);
+        .multiplyDecimal(syntharb().getLatestETHUSDPrice())
+        .divideDecimal(syntharb().getLatestPrice());
     }
 
     /**
@@ -265,14 +262,11 @@ contract EtherCollateral is ReentrancyGuard {
      * @return the amount of collateral (in ETH) needed to open a loan for the synth amount
     */
     function collateralAmountForLoan(uint256 loanAmount) public view returns (uint256) {
-        uint currentprice = syntharb().getLatestPrice();
-        uint currentethusdprice = syntharb().getLatestETHUSDPrice();
-
         return
         loanAmount
         .multiplyDecimal(collateralizationRatio
-        .divideDecimalRound(currentethusdprice)
-        .multiplyDecimal(currentprice))
+        .divideDecimalRound(syntharb().getLatestETHUSDPrice())
+        .multiplyDecimal(syntharb().getLatestPrice()))
         .divideDecimalRound(ONE_HUNDRED);
     }
 
@@ -307,10 +301,9 @@ contract EtherCollateral is ReentrancyGuard {
      */
     function calculateAmountToLiquidate(uint debtBalance, uint collateral) public view returns (uint) {
         uint unit = SafeDecimalMath.unit();
-        uint ratio = liquidationRatio;
 
-        uint dividend = debtBalance.sub(collateral.divideDecimal(ratio));
-        uint divisor = unit.sub(unit.add(liquidationPenalty).divideDecimal(ratio));
+        uint dividend = debtBalance.sub(collateral.divideDecimal(liquidationRatio));
+        uint divisor = unit.sub(unit.add(liquidationPenalty).divideDecimal(liquidationRatio));
 
         return dividend.divideDecimal(divisor);
     }
