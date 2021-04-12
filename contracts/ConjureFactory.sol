@@ -2,9 +2,7 @@
 pragma solidity 0.7.6;
 pragma experimental ABIEncoderV2;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./lib/CloneLibrary.sol";
-
 
 /// @author Conjure Finance Team
 /// @title ConjureFactory
@@ -19,37 +17,49 @@ contract ConjureFactory {
     address public conjureImplementation;
     address public etherCollateralImplementation;
     address payable public conjureRouter;
-    IERC20 cnj;
 
     constructor(
         address _conjureImplementation,
         address _etherCollateralImplementation,
-        address payable _conjureRouter,
-        IERC20 _cnj
+        address payable _conjureRouter
     )
     {
         factoryOwner = msg.sender;
         conjureImplementation = _conjureImplementation;
         etherCollateralImplementation = _etherCollateralImplementation;
         conjureRouter = _conjureRouter;
-        cnj = _cnj;
     }
 
     /**
      * @dev lets anyone mint a new Conjure contract
      *
-     * @param name_ the name of the conjure asset
-     * @param symbol_ the symbol of the conjure asset
-     * @param owner_ the owner of the conjure asset
-     * @param indexedFinanceUniswapv2oracle_ the uniswap oracle
+     *  @param oracleTypesValuesWeightsDecimals array containing the oracle type, oracle value, oracle weight,
+     *         oracle decimals array
+     *  @param calldataarray thr calldata array for the oracle setup
+     *  @param signatures_ the array containing the signatures if the oracles
+     *  @param oracleAddresses_ the addresses array of the oracles
+     *  @param divisorAssetTypeMintingFeeRatio array containing 2 arrays: 1. divisor + assetType, 2. mintingFee + cratio
+     *  @param conjureAddresses containing the 3 conjure needed addresses: owner, indexedFinanceUniswapv2oracle_,
+               ethusdchainlinkoracle_
+     *  @param namesymbol array containing the name and the symbol of the asset
+     *  @param inverse indicator if this an inverse asset
+     *  @return conjure the conjure contract address
+     *  @return etherCollateral the ethercollateral address
     */
     function ConjureMint(
-        string memory name_,
-        string memory symbol_,
-        address payable owner_,
-        address indexedFinanceUniswapv2oracle_,
-        uint256 mintingFee_,
-        uint256 cratio_
+        // oracle type, oracle value, oracle weight, oracle decimals array
+        uint256[4][] memory oracleTypesValuesWeightsDecimals,
+        bytes[] memory calldataarray,
+        string[] memory signatures_,
+        address[] memory oracleAddresses_,
+        // divisor, asset type // mintingFee_, cratio_
+        uint256[2][2] memory divisorAssetTypeMintingFeeRatio,
+        // owner, indexedFinanceUniswapv2oracle_, ethusdchainlinkoracle_
+        address[3] memory conjureAddresses,
+        // name, symbol
+        string[2] memory namesymbol,
+        // inverse asset indicator
+        bool inverse
     )
     public
     returns(address conjure, address etherCollateral)
@@ -58,20 +68,26 @@ contract ConjureFactory {
         etherCollateral = etherCollateralImplementation.createClone();
 
         IConjure(conjure).initialize(
-            name_,
-            symbol_,
-            owner_,
+            namesymbol,
+            conjureAddresses,
             address(this),
-            indexedFinanceUniswapv2oracle_,
             etherCollateral
         );
 
         IEtherCollateral(etherCollateral).initialize(
             payable(conjure),
-            owner_,
+            conjureAddresses[0],
             address(this),
-            mintingFee_,
-            cratio_
+            divisorAssetTypeMintingFeeRatio[1]
+        );
+
+        IConjure(conjure).init(
+            inverse,
+            divisorAssetTypeMintingFeeRatio[0],
+            oracleAddresses_,
+            oracleTypesValuesWeightsDecimals,
+            signatures_,
+            calldataarray
         );
 
         emit NewConjure(conjure, etherCollateral);
@@ -130,12 +146,19 @@ contract ConjureFactory {
 
 interface IConjure {
     function initialize(
-        string memory name_,
-        string memory symbol_,
-        address payable owner_,
+        string[2] memory namesymbol,
+        address[3] memory conjureAddresses,
         address factoryaddress_,
-        address uniswapv2oracle,
         address collateralContract
+    ) external;
+
+    function init(
+        bool inverse_,
+        uint256[2] memory divisorAssetType,
+        address[] memory oracleAddresses_,
+        uint256[4][] memory oracleTypesValuesWeightsDecimals,
+        string[] memory signatures_,
+        bytes[] memory calldata_
     ) external;
 }
 
@@ -144,8 +167,7 @@ interface IEtherCollateral {
         address payable _asset,
         address _owner,
         address _factoryaddress,
-        uint256 _mintingfeerate,
-        uint256 _ratio
+        uint256[2] memory _mintingFeeRatio
     )
     external;
 }

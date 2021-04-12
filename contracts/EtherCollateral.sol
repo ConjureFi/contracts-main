@@ -129,30 +129,36 @@ contract EtherCollateral is ReentrancyGuard {
         require(msg.sender == owner, "Only the contract owner may perform this action");
     }
 
-    // init function for clones
+    /**
+     * @dev initializes the clone implementation and the EtherCollateral contract
+     *
+     * @param _asset the asset with which the EtherCollateral contract is linked
+     * @param _owner the owner of the asset
+     * @param _factoryaddress the address of the conjure factory for later fee sending
+     * @param _mintingFeeRatio array which holds the minting fee and the c-ratio
+    */
     function initialize(
         address payable _asset,
         address _owner,
         address _factoryaddress,
-        uint256 _mintingfeerate,
-        uint256 _ratio
+        uint256[2] memory _mintingFeeRatio
     )
     external
     {
         require(_factoryContract == address(0), "already initialized");
         require(_factoryaddress != address(0), "factory can not be null");
         // max 2.5% fee for minting
-        require(_mintingfeerate <= 250, "Minting fee too high");
-        // c ratio greater 100 and less or equal 1000
-        require(_ratio <= ONE_THOUSAND, "C-Ratio Too high");
-        require(_ratio > ONE_HUNDRED_TEN, "C-Ratio Too low");
+        require(_mintingFeeRatio[0] <= 250, "Minting fee too high");
+        // c-ratio greater 100 and less or equal 1000
+        require(_mintingFeeRatio[1] <= ONE_THOUSAND, "C-Ratio Too high");
+        require(_mintingFeeRatio[1] > ONE_HUNDRED_TEN, "C-Ratio Too low");
 
         arbasset = _asset;
         owner = _owner;
         _factoryContract = _factoryaddress;
-        issueFeeRate = _mintingfeerate;
-        collateralizationRatio = _ratio;
-        liquidationRatio = _ratio / 100;
+        issueFeeRate = _mintingFeeRatio[0];
+        collateralizationRatio = _mintingFeeRatio[1];
+        liquidationRatio = _mintingFeeRatio[1] / 100;
     }
 
     // ========== SETTERS ==========

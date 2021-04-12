@@ -107,9 +107,7 @@ contract Conjure is IERC20, ReentrancyGuard {
     // the eth usd price feed chainlink oracle address
     //chainlink eth/usd mainnet: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
     //chainlink eth/usd rinkeby: 0x8A753747A1Fa494EC906cE90E9f37563A8AF630e
-    AggregatorV3Interface public immutable ethusdchainlinkoracle = AggregatorV3Interface(
-        0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
-    );
+    address public ethusdchainlinkoracle;
 
     // ========== EVENTS ==========
     event NewOwner(address newOwner);
@@ -133,69 +131,79 @@ contract Conjure is IERC20, ReentrancyGuard {
     }
 
     /**
-     * @dev init function which will set up the price finding for the contract
-     * can only be called once
+     * @dev initializes the clone implementation and the Conjure contract
+     *
+     * @param namesymbol array holding the name and the symbol of the asset
+     * @param conjureAddresses array holding the owner, indexed uniswap oracle and ethusdchainlinkoracle address
+     * @param factoryaddress_ the address of the factory
+     * @param collateralContract the EtherCollateral contract of the asset
     */
     function initialize(
-        string memory name_,
-        string memory symbol_,
-        address payable owner_,
+        string[2] memory namesymbol,
+        address[3] memory conjureAddresses,
         address factoryaddress_,
-        address indexedFinanceUniswapV2Oracle_,
         address collateralContract
     ) external
     {
         require(_factoryContract == address(0), "already initialized");
         require(factoryaddress_ != address(0), "factory can not be null");
 
-        _owner = owner_;
-        _name = name_;
-        _symbol = symbol_;
+        _owner = payable(conjureAddresses[0]);
+        _name = namesymbol[0];
+        _symbol = namesymbol[1];
 
-        _indexedFinanceUniswapV2Oracle = IndexedFinanceUniswapV2OracleInterface(indexedFinanceUniswapV2Oracle_);
+        _indexedFinanceUniswapV2Oracle = IndexedFinanceUniswapV2OracleInterface(conjureAddresses[1]);
+        ethusdchainlinkoracle = conjureAddresses[2];
         _factoryContract = factoryaddress_;
 
         // mint new EtherCollateral contract
         _collateralContract = collateralContract;
     }
 
+    /**
+     * @dev inits the conjure asset can only be called by the factory address
+     *
+     * @param inverse_ indicated it the asset is an inverse asset or not
+     * @param divisorAssetType array containing the divisor and the asset type
+     * @param oracleAddresses_ the array holding the oracle addresses
+     * @param oracleTypesValuesWeightsDecimals array holding the oracle types,values,weights and decimals
+     * @param signatures_ array holding the oracle signatures
+     * @param calldata_ array holding the oracle calldata
+    */
     function init(
-        uint256 divisor_,
         bool inverse_,
-        uint256 assetType_,
+        uint256[] memory divisorAssetType,
         address[] memory oracleAddresses_,
-        uint256[] memory oracleTypes_,
+        uint256[4][] memory oracleTypesValuesWeightsDecimals,
         string[] memory signatures_,
-        bytes[] memory calldata_,
-        uint256[] memory values_,
-        uint256[] memory weights_,
-        uint256[] memory decimals_
-    ) external onlyOwner {
+        bytes[] memory calldata_
+    ) external {
+        require(msg.sender == _factoryContract, "can only be called by factory contract");
         require(_inited == false, "Contract already inited");
-        require(divisor_ != 0, "Divisor should not be 0");
+        require(divisorAssetType[0] != 0, "Divisor should not be 0");
 
-        _assetType = assetType_;
+        _assetType = divisorAssetType[1];
         _numoracles = oracleAddresses_.length;
-        _indexdivisor = divisor_;
+        _indexdivisor = divisorAssetType[0];
         _inverse = inverse_;
 
         uint256 weightcheck;
 
         // push the values into the oracle struct for further processing
         for (uint i = 0; i < oracleAddresses_.length; i++) {
-            require(decimals_[i] <= 18, "Decimals too high");
+            require(oracleTypesValuesWeightsDecimals[3][i] <= 18, "Decimals too high");
 
             _oracleData.push(_oracleStruct({
                 oracleaddress: oracleAddresses_[i],
-                oracleType: oracleTypes_[i],
+                oracleType: oracleTypesValuesWeightsDecimals[0][i],
                 signature: signatures_[i],
                 calldatas: calldata_[i],
-                weight: weights_[i],
-                values: values_[i],
-                decimals: decimals_[i]
+                weight: oracleTypesValuesWeightsDecimals[2][i],
+                values: oracleTypesValuesWeightsDecimals[1][i],
+                decimals: oracleTypesValuesWeightsDecimals[3][i]
             }));
 
-            weightcheck += weights_[i];
+            weightcheck += oracleTypesValuesWeightsDecimals[2][i];
         }
 
         // for basket assets weights must add up to 100
@@ -302,7 +310,7 @@ contract Conjure is IERC20, ReentrancyGuard {
         int price,
         ,
         ,
-        ) = ethusdchainlinkoracle.latestRoundData();
+        ) = AggregatorV3Interface(ethusdchainlinkoracle).latestRoundData();
 
         return uint(price) * 10 ** (_maximumDecimals - chainLinkReturnDecimals);
     }
