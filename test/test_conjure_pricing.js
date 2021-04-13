@@ -3,14 +3,24 @@ const {expect} = require("chai");
 const { ethers } = require("hardhat");
 const zeroaddress = "0x0000000000000000000000000000000000000000";
 
-// test suite for ConjureFactory
+// test suite for Conjure
 describe("Conjure Pricing Core Tests", function () {
 
   // variable to store the deployed smart contract
-  let conjure;
-  let collateralFactory;
+  let conjureImplementation;
+  let etherCollateralImplementation;
+  let conjureFactory;
   let mock;
+  let mock2000;
+  let mock3000;
+  let mockinverse;
+  let mock18dec;
+
+  let conjure;
+  let ethercollateral;
+
   let owner, addr1, addr2, addr3, addr4;
+  const deploy = async (name, ...args) => (await ethers.getContractFactory(name)).deploy(...args);
 
   // initial deployment of Conjure Factory
   before(async function () {
@@ -21,295 +31,376 @@ describe("Conjure Pricing Core Tests", function () {
     let temp = await SAFELIB.deploy();
     await temp.deployed();
 
+    conjureImplementation = await deploy('Conjure');
+
     // deploy conjure factory
-    const COLLATERALFACTORY = await ethers.getContractFactory("EtherCollateralFactory",
+    const COLLATERAL = await ethers.getContractFactory("EtherCollateral",
         {
           libraries: {SafeDecimalMath: temp.address}
         }
     );
 
-    collateralFactory = await COLLATERALFACTORY.deploy();
-    await collateralFactory.deployed();
-  })
-
-  it("Should get the price median right for a single oracle", async function () {
+    etherCollateralImplementation = await COLLATERAL.deploy();
+    await etherCollateralImplementation.deployed();
 
     // deploy conjure factory
-    const CONJURE = await ethers.getContractFactory("Conjure");
-    conjure = await CONJURE.deploy(
-        "NAME",
-        "SYMBOL",
-        owner.address,
-        zeroaddress,
-        zeroaddress,
-        collateralFactory.address
+    conjureFactory = await deploy(
+        'ConjureFactory',
+        conjureImplementation.address,
+        etherCollateralImplementation.address,
+        owner.address
     );
-    await conjure.deployed();
 
     // deploy oracle mock
-    const MOCK = await ethers.getContractFactory("ETHUSDOracle_MOCK");
+    let MOCK = await ethers.getContractFactory("ETHUSDOracle_MOCK");
     mock = await MOCK.deploy();
     await mock.deployed();
 
-    await conjure.init(
-        0,
-        0,
-        ["1", "120000000000000000000"],
-        false,
-        [mock.address],
-        [2],
-        ["latestAnswer()"],
+    MOCK = await ethers.getContractFactory("ETHUSDOracle_MOCK_2000");
+    mock2000 = await MOCK.deploy();
+    await mock2000.deployed();
+
+    MOCK = await ethers.getContractFactory("ETHUSDOracle_MOCK_3000");
+    mock3000 = await MOCK.deploy();
+    await mock3000.deployed();
+
+    MOCK = await ethers.getContractFactory("ETHUSDOracle_MOCK_INVERSE_TEST");
+    mockinverse = await MOCK.deploy();
+    await mockinverse.deployed();
+
+    MOCK = await ethers.getContractFactory("ETHUSDOracle_MOCK18Decimals");
+    mock18dec = await MOCK.deploy();
+    await mock18dec.deployed();
+  })
+
+  it("Revert when call to non existing fallback function is initiated", async function () {
+    await expect(conjureFactory.ConjureMint(
+        [[2],[0],[100],[8]],
         [0x00],
-        [0],
-        [100],
-        [8]
+        [""],
+        [mock.address],
+        [[1,0], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        false
+    )).to.be.revertedWith("Call unsuccessful");
+  });
+
+  it("Should get the price median right for a single oracle", async function () {
+    const tx = await conjureFactory.ConjureMint(
+        [[0],[0],[100],[8]],
+        [0x00],
+        ["signature1"],
+        [mock.address],
+        [[1,0], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        false
     );
+
+    const {events} = await tx.wait();
+    const [event] = events.filter(e => e.event === "NewConjure");
+    conjure = await ethers.getContractAt("Conjure", event.args.conjure);
+    ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
 
     let lastprice = await conjure.getLatestPrice()
     expect(lastprice).to.be.equal("1500000000000000000000");
   });
 
-  it("Should get the price median right for a 2 oracles", async function () {
-
-    // deploy conjure factory
-    const CONJURE = await ethers.getContractFactory("Conjure");
-    conjure = await CONJURE.deploy(
-        "NAME",
-        "SYMBOL",
-        owner.address,
-        zeroaddress,
-        zeroaddress,
-        collateralFactory.address
+  it("Should get the price median right for a 3 oracles", async function () {
+    const tx = await conjureFactory.ConjureMint(
+        [[2,2,2],[0,0,0],[30,30,40],[8,8,8]],
+        [0x00, 0x00, 0x00],
+        ["latestAnswer()", "latestAnswer()", "latestAnswer()"],
+        [mock.address, mock2000.address, mock3000.address],
+        [[1,0], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        false
     );
-    await conjure.deployed();
 
-    // deploy oracle mock
-    const MOCK = await ethers.getContractFactory("ETHUSDOracle_MOCK");
-    mock = await MOCK.deploy();
-    await mock.deployed();
-
-    await conjure.init(
-        0,
-        0,
-        ["1", "120000000000000000000"],
-        false,
-        [mock.address,mock.address],
-        [2,2],
-        ["latestAnswer()","latestAnswer()"],
-        [0x00,0x00],
-        [0,0],
-        [0,0],
-        [8,8]
-    );
+    const {events} = await tx.wait();
+    const [event] = events.filter(e => e.event === "NewConjure");
+    conjure = await ethers.getContractAt("Conjure", event.args.conjure);
+    ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
 
     let lastprice = await conjure.getLatestPrice()
+
+    // should return the middle price (2000)
+    expect(lastprice).to.be.equal("2000000000000000000000");
+ });
+
+  it("Should get the price median right for a 2 oracles", async function () {
+    const tx = await conjureFactory.ConjureMint(
+        [[2,2],[0,0],[30,30],[8,8]],
+        [0x00, 0x00],
+        ["latestAnswer()", "latestAnswer()"],
+        [mock.address, mock2000.address],
+        [[1,0], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        false
+    );
+
+    const {events} = await tx.wait();
+    const [event] = events.filter(e => e.event === "NewConjure");
+    conjure = await ethers.getContractAt("Conjure", event.args.conjure);
+    ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
+
+    let lastprice = await conjure.getLatestPrice()
+
+    // should return the avg price of 1500 and 2000 (1750)
+    expect(lastprice).to.be.equal("1750000000000000000000");
+  });
+
+  it("Should get the price median right for a 2 oracles with maximum decimals (18)", async function () {
+    const tx = await conjureFactory.ConjureMint(
+        [[0,2],[0,0],[30,30],[18,18]],
+        [0x00, 0x00],
+        ["latestAnswer()", "latestAnswer()"],
+        [mock18dec.address, mock18dec.address],
+        [[1,0], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        false
+    );
+
+    const {events} = await tx.wait();
+    const [event] = events.filter(e => e.event === "NewConjure");
+    conjure = await ethers.getContractAt("Conjure", event.args.conjure);
+    ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
+
+    let lastprice = await conjure.getLatestPrice()
+
+    // should return the avg price of 1500 and 1500
     expect(lastprice).to.be.equal("1500000000000000000000");
   });
 
   it("Should get the right avg price for a single basket", async function () {
-
-    // deploy conjure factory
-    const CONJURE = await ethers.getContractFactory("Conjure");
-    conjure = await CONJURE.deploy(
-        "NAME",
-        "SYMBOL",
-        owner.address,
-        zeroaddress,
-        zeroaddress,
-        collateralFactory.address
-    );
-    await conjure.deployed();
-
-    // deploy oracle mock
-    const MOCK = await ethers.getContractFactory("ETHUSDOracle_MOCK");
-    mock = await MOCK.deploy();
-    await mock.deployed();
-
-    await conjure.init(
-        0,
-        1,
-        ["1", "120000000000000000000"],
-        false,
-        [mock.address],
-        [2],
-        ["latestAnswer()"],
+    const tx = await conjureFactory.ConjureMint(
+        [[2],[0],[100],[8]],
         [0x00],
-        [0],
-        [100],
-        [8]
-    );
-
-    let lastprice = await conjure.getLatestPrice()
-    expect(lastprice).to.be.equal("1500000000000000000000");
-  });
-
-  it("Should get the price avg right for a 2 oracles", async function () {
-
-    // deploy conjure factory
-    const CONJURE = await ethers.getContractFactory("Conjure");
-    conjure = await CONJURE.deploy(
-        "NAME",
-        "SYMBOL",
-        owner.address,
-        zeroaddress,
-        zeroaddress,
-        collateralFactory.address
-    );
-    await conjure.deployed();
-
-    // deploy oracle mock
-    const MOCK = await ethers.getContractFactory("ETHUSDOracle_MOCK");
-    mock = await MOCK.deploy();
-    await mock.deployed();
-
-    await conjure.init(
-        0,
-        1,
-        ["1", "120000000000000000000"],
-        false,
-        [mock.address,mock.address],
-        [2,2],
-        ["latestAnswer()","latestAnswer()"],
-        [0x00,0x00],
-        [0,0],
-        [50,50],
-        [8,8]
-    );
-
-    let lastprice = await conjure.getLatestPrice()
-    expect(lastprice).to.be.equal("1500000000000000000000");
-  });
-
-  it("Should get the right avg price for an INVERSE single basket", async function () {
-
-    // deploy conjure factory
-    const CONJURE = await ethers.getContractFactory("Conjure");
-    conjure = await CONJURE.deploy(
-        "NAME",
-        "SYMBOL",
-        owner.address,
-        zeroaddress,
-        zeroaddress,
-        collateralFactory.address
-    );
-    await conjure.deployed();
-
-    // deploy oracle mock
-    const MOCK = await ethers.getContractFactory("ETHUSDOracle_MOCK");
-    mock = await MOCK.deploy();
-    await mock.deployed();
-
-    await conjure.init(
-        0,
-        1,
-        ["1", "120000000000000000000"],
-        true,
-        [mock.address],
-        [2],
         ["latestAnswer()"],
-        [0x00],
-        [0],
-        [100],
-        [8]
+        [mock3000.address],
+        [[1,1], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        false
     );
+
+    const {events} = await tx.wait();
+    const [event] = events.filter(e => e.event === "NewConjure");
+    conjure = await ethers.getContractAt("Conjure", event.args.conjure);
+    ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
 
     let lastprice = await conjure.getLatestPrice()
-    let deplprice = await conjure._deploymentPrice()
-    expect(lastprice).to.be.equal("1500000000000000000000");
-    expect(deplprice).to.be.equal("1500000000000000000000");
 
-    // now query price 4 times to see the mock effect
-    await conjure.getPrice();
-    await conjure.getPrice();
-    await conjure.getPrice();
-    await conjure.getPrice();
-    await conjure.getPrice();
-
-    lastprice = await conjure.getLatestPrice()
-    expect(lastprice).to.be.equal("900000000000000000000");
-  });
-
-  it("Should get the right avg price for an INVERSE single basket with decrease", async function () {
-
-    // deploy conjure factory
-    const CONJURE = await ethers.getContractFactory("Conjure");
-    conjure = await CONJURE.deploy(
-        "NAME",
-        "SYMBOL",
-        owner.address,
-        zeroaddress,
-        zeroaddress,
-        collateralFactory.address
-    );
-    await conjure.deployed();
-
-    // deploy oracle mock
-    const MOCK = await ethers.getContractFactory("PriceTestOracle_MOCK");
-    mock = await MOCK.deploy();
-    await mock.deployed();
-
-    await conjure.init(
-        0,
-        1,
-        ["1", "120000000000000000000"],
-        true,
-        [mock.address],
-        [2],
-        ["latestAnswer()"],
-        [0x00],
-        [0],
-        [100],
-        [8]
-    );
-
-    let lastprice = await conjure.getLatestPrice()
-    let deplprice = await conjure._deploymentPrice()
-    expect(lastprice).to.be.equal("1500000000000000000000");
-    expect(deplprice).to.be.equal("1500000000000000000000");
-
-    // now query price 4 times to see the mock effect
-    await conjure.getPrice();
-    await conjure.getPrice();
-    await conjure.getPrice();
-    await conjure.getPrice();
-    await conjure.getPrice();
-
-    lastprice = await conjure.getLatestPrice()
+    // only 1 asset so should return the same value (3000)
     expect(lastprice).to.be.equal("3000000000000000000000");
   });
 
-  it("Should get the right avg price for an INVERSE single basket increasing setting value to 0", async function () {
+  it("Should revert if basket asset weights do not sum up to 100", async function () {
+    await expect(  conjureFactory.ConjureMint(
+        [[0,0,0],[0,0,0],[30,30,59],[8,8,8]],
+        [0x00, 0x00, 0x00],
+        ["latestAnswer()", "latestAnswer()", "latestAnswer()"],
+        [mock.address, mock2000.address, mock3000.address],
+        [[1,1], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        false
+    )).to.be.revertedWith("Weights not 100")
 
-    // deploy conjure factory
-    const CONJURE = await ethers.getContractFactory("Conjure");
-    conjure = await CONJURE.deploy(
-        "NAME",
-        "SYMBOL",
-        owner.address,
-        zeroaddress,
-        zeroaddress,
-        collateralFactory.address
+  });
+
+  it("Should revert if the call of custom oracle is not ok (wrong payload)", async function () {
+    await expect(  conjureFactory.ConjureMint(
+        [[2,2,2],[0,0,0],[30,30,40],[8,8,8]],
+        [0x123, 0x456, 0x00],
+        ["testwrongcall()", "latestAnswer()", "latestAnswer()"],
+        [mock.address, mock2000.address, mock3000.address],
+        [[1,1], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        false
+    )).to.be.revertedWith("Call unsuccessful")
+
+  });
+
+  it("Should revert with no oracle data", async function () {
+    await expect(  conjureFactory.ConjureMint(
+        [[],[],[],[]],
+        [],
+        [],
+        [],
+        [[1,0], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        false
+    )).to.be.revertedWith("No oracle feeds supplied")
+
+  });
+
+  it("Should get the price avg right for 3 oracles", async function () {
+    const tx = await conjureFactory.ConjureMint(
+        [[0,0,0],[0,0,0],[30,30,40],[8,8,8]],
+        [0x00, 0x00, 0x00],
+        ["latestAnswer()", "latestAnswer()", "latestAnswer()"],
+        [mock.address, mock2000.address, mock3000.address],
+        [[1,1], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        false
     );
-    await conjure.deployed();
 
-    // deploy oracle mock
-    const MOCK = await ethers.getContractFactory("PriceTestOracle_MOCK");
-    mock = await MOCK.deploy();
-    await mock.deployed();
+    const {events} = await tx.wait();
+    const [event] = events.filter(e => e.event === "NewConjure");
+    conjure = await ethers.getContractAt("Conjure", event.args.conjure);
+    ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
 
-    await conjure.init(
-        0,
-        1,
-        ["1", "120000000000000000000"],
-        true,
-        [mock.address],
-        [2],
-        ["latestAnswer()"],
+    let lastprice = await conjure.getLatestPrice()
+
+    // should return avg (0.3 * 1500, 0.3 * 2000, 0.4 * 3000)
+    expect(lastprice).to.be.equal("2250000000000000000000");
+  });
+
+  it("Should get the price avg right for 3 oracles mixed order", async function () {
+    const tx = await conjureFactory.ConjureMint(
+        [[0,0,0],[0,0,0],[30,30,40],[8,8,8]],
+        [0x00, 0x00, 0x00],
+        ["latestAnswer()", "latestAnswer()", "latestAnswer()"],
+        [mock2000.address, mock.address, mock3000.address],
+        [[1,1], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        false
+    );
+
+    const {events} = await tx.wait();
+    const [event] = events.filter(e => e.event === "NewConjure");
+    conjure = await ethers.getContractAt("Conjure", event.args.conjure);
+    ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
+
+    let lastprice = await conjure.getLatestPrice()
+
+    // should return avg (0.3 * 2000, 0.3 * 1500, 0.4 * 3000)
+    expect(lastprice).to.be.equal("2250000000000000000000");
+  });
+
+  it("Should get the price avg right for 3 oracles mixed order 2", async function () {
+    const tx = await conjureFactory.ConjureMint(
+        [[0,0,0],[0,0,0],[30,30,40],[8,8,8]],
+        [0x00, 0x00, 0x00],
+        ["latestAnswer()", "latestAnswer()", "latestAnswer()"],
+        [mock3000.address, mock.address, mock2000.address],
+        [[1,1], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        false
+    );
+
+    const {events} = await tx.wait();
+    const [event] = events.filter(e => e.event === "NewConjure");
+    conjure = await ethers.getContractAt("Conjure", event.args.conjure);
+    ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
+
+    let lastprice = await conjure.getLatestPrice()
+
+    // should return avg (0.3 * 3000, 0.3 * 1500, 0.4 * 2000)
+    expect(lastprice).to.be.equal("2150000000000000000000");
+  });
+
+  it("Should get the right avg price for an INVERSE single basket", async function () {
+    const tx = await conjureFactory.ConjureMint(
+        [[2],[0],[100],[8]],
         [0x00],
-        [0],
-        [100],
-        [8]
+        ["latestAnswer()"],
+        [mockinverse.address],
+        [[1,1], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        true
     );
+
+    const {events} = await tx.wait();
+    const [event] = events.filter(e => e.event === "NewConjure");
+    conjure = await ethers.getContractAt("Conjure", event.args.conjure);
+    ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
+
+    let lastprice = await conjure.getLatestPrice()
+    let deplprice = await conjure._deploymentPrice()
+    expect(lastprice).to.be.equal("1500000000000000000000");
+    expect(deplprice).to.be.equal("1500000000000000000000");
+
+    // now set the inverse asset to increase the price
+    await mockinverse.setState(1);
+
+    // call price update on the conjure asset
+    conjure.updatePrice();
+
+    lastprice = await conjure.getLatestPrice()
+
+    // expect the price to be 1500 * 2 - 2000
+    expect(lastprice).to.be.equal("1000000000000000000000");
+  });
+
+  it("Should get the right avg price for an INVERSE single basket with decrease", async function () {
+    // set back the inverse mock
+    await mockinverse.setState(0);
+
+    const tx = await conjureFactory.ConjureMint(
+        [[2],[0],[100],[8]],
+        [0x00],
+        ["latestAnswer()"],
+        [mockinverse.address],
+        [[1,1], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        true
+    );
+
+    const {events} = await tx.wait();
+    const [event] = events.filter(e => e.event === "NewConjure");
+    conjure = await ethers.getContractAt("Conjure", event.args.conjure);
+    ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
+
+    let lastprice = await conjure.getLatestPrice()
+    let deplprice = await conjure._deploymentPrice()
+    expect(lastprice).to.be.equal("1500000000000000000000");
+    expect(deplprice).to.be.equal("1500000000000000000000");
+
+    // now set the inverse asset to increase the price
+    await mockinverse.setState(2);
+    console.log(await mockinverse.state())
+
+    // call price update on the conjure asset
+    conjure.updatePrice();
+
+    lastprice = await conjure.getLatestPrice()
+
+    // expect the price to be 1500 * 2 - 1000
+    expect(lastprice).to.be.equal("2000000000000000000000");
+  });
+
+  it("Should get the right avg price for an INVERSE single basket increasing setting value to 0", async function () {
+    // set back the inverse mock
+    await mockinverse.setState(0);
+
+    const tx = await conjureFactory.ConjureMint(
+        [[2],[0],[100],[8]],
+        [0x00],
+        ["latestAnswer()"],
+        [mockinverse.address],
+        [[1,1], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        true
+    );
+
+    const {events} = await tx.wait();
+    const [event] = events.filter(e => e.event === "NewConjure");
+    conjure = await ethers.getContractAt("Conjure", event.args.conjure);
+    ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
 
     let lastprice = await conjure.getLatestPrice()
     let deplprice = await conjure._deploymentPrice()
@@ -317,36 +408,38 @@ describe("Conjure Pricing Core Tests", function () {
     expect(deplprice).to.be.equal("1500000000000000000000");
 
     // check collateral if asset is closed
-    let return_collateral = await conjure._collateralContract();
-    let collateral = await ethers.getContractAt("EtherCollateral", return_collateral);
-    let opencheck = await collateral.assetClosed();
+    let opencheck = await ethercollateral.assetClosed();
     expect(opencheck).to.be.equal(false);
 
-    // now query price 4 times to see the mock effect
-    await conjure.getPrice();
-    await conjure.getPrice();
-    await conjure.getPrice();
-    await conjure.getPrice();
+    // now set the inverse asset to increase the price
+    await mockinverse.setState(3);
+    console.log(await mockinverse.state())
 
-    // asset should be 0 now
+    // call price update on the conjure asset
+    conjure.updatePrice();
+
     lastprice = await conjure.getLatestPrice()
+
+    // expect the price to be 1500 * 2 - 3000
     expect(lastprice).to.be.equal("0");
 
     // asset should now be closed
-    opencheck = await collateral.assetClosed()
+    opencheck = await ethercollateral.assetClosed()
     expect(opencheck).to.be.equal(true);
 
     // should not be able to open a new loan now
     // get amount needed
     const amountToBorrow = "1000000000000000000";
 
-    // send 1.6 eth so 150% c-ratio
+    // send ether
     let overrides = {
       value: "1600000000000000000"
     };
 
     // should get loan for 1 arb asset
-    await expect(collateral.openLoan(amountToBorrow,overrides)).to.be.reverted;
+    await expect(ethercollateral.openLoan(amountToBorrow,overrides)).to.be.revertedWith("Asset closed");
+
+    await expect(ethercollateral.depositCollateral(owner.address, 1,overrides)).to.be.revertedWith("Asset closed for deposit collateral");
   });
 
 

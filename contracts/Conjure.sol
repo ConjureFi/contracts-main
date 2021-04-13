@@ -10,6 +10,7 @@ import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import "./lib/FixedPoint.sol";
 import "./interfaces/IEtherCollateral.sol";
 import "./interfaces/IndexedFinanceUniswapV2OracleInterface.sol";
+import "hardhat/console.sol";
 
 /// @author Conjure Finance Team
 /// @title Conjure
@@ -96,13 +97,13 @@ contract Conjure is IERC20, ReentrancyGuard {
     uint256 public _deploymentPrice;
 
     // maximum decimal size for the used prices
-    uint256 private _maximumDecimals = 18;
+    uint256 private constant _maximumDecimals = 18;
 
     // The number representing 1.0
-    uint256 internal UNIT = 10**18;
+    uint256 private constant UNIT = 10**18;
 
     // chainlink aggregator decimals to give back
-    uint256 internal constant chainLinkReturnDecimals = 8;
+    uint256 private constant chainLinkReturnDecimals = 8;
 
     // the eth usd price feed chainlink oracle address
     //chainlink eth/usd mainnet: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
@@ -140,7 +141,7 @@ contract Conjure is IERC20, ReentrancyGuard {
     */
     function initialize(
         string[2] memory namesymbol,
-        address[3] memory conjureAddresses,
+        address[] memory conjureAddresses,
         address factoryaddress_,
         address collateralContract
     ) external
@@ -172,9 +173,9 @@ contract Conjure is IERC20, ReentrancyGuard {
     */
     function init(
         bool inverse_,
-        uint256[] memory divisorAssetType,
+        uint256[2] memory divisorAssetType,
         address[] memory oracleAddresses_,
-        uint256[4][] memory oracleTypesValuesWeightsDecimals,
+        uint256[][4] memory oracleTypesValuesWeightsDecimals,
         string[] memory signatures_,
         bytes[] memory calldata_
     ) external {
@@ -192,7 +193,7 @@ contract Conjure is IERC20, ReentrancyGuard {
         // push the values into the oracle struct for further processing
         for (uint i = 0; i < oracleAddresses_.length; i++) {
             require(oracleTypesValuesWeightsDecimals[3][i] <= 18, "Decimals too high");
-
+            console.log(oracleTypesValuesWeightsDecimals[3][i] );
             _oracleData.push(_oracleStruct({
                 oracleaddress: oracleAddresses_[i],
                 oracleType: oracleTypesValuesWeightsDecimals[0][i],
@@ -296,6 +297,9 @@ contract Conjure is IERC20, ReentrancyGuard {
         ,
         ,
         ) = priceFeed.latestRoundData();
+
+        console.log("%s", uint(price));
+
         return uint(price);
     }
 
@@ -311,6 +315,8 @@ contract Conjure is IERC20, ReentrancyGuard {
         ,
         ,
         ) = AggregatorV3Interface(ethusdchainlinkoracle).latestRoundData();
+
+        console.log("%s", uint(price));
 
         return uint(price) * 10 ** (_maximumDecimals - chainLinkReturnDecimals);
     }
@@ -422,6 +428,8 @@ contract Conjure is IERC20, ReentrancyGuard {
     function updatePrice() public {
         uint256 returnPrice = updateInternalPrice();
 
+        console.log(returnPrice);
+
         // if it is an inverse asset we do price = _deploymentPrice - (current price - _deploymentPrice)
         // --> 2 * deployment price - current price
         // but only if the asset is inited otherwise we return the normal price calculation
@@ -452,6 +460,8 @@ contract Conjure is IERC20, ReentrancyGuard {
         // storing all in an array for further processing
         uint[] memory prices = new uint[](_oracleData.length);
 
+        console.log("here");
+
         for (uint i = 0; i < _oracleData.length; i++) {
 
             // chainlink oracle
@@ -459,10 +469,18 @@ contract Conjure is IERC20, ReentrancyGuard {
                 AggregatorV3Interface pricefeed = AggregatorV3Interface(_oracleData[i].oracleaddress);
                 prices[i] = getLatestPrice(pricefeed);
 
+                console.log(prices[i]);
+
                 // norming price
                 if (_maximumDecimals != _oracleData[i].decimals) {
                     prices[i] = prices[i] * 10 ** (_maximumDecimals - _oracleData[i].decimals);
+                    console.log("in it");
+                    console.log(_maximumDecimals);
+                    console.log(_oracleData[i].decimals);
+                    console.log(_maximumDecimals - _oracleData[i].decimals);
                 }
+
+                console.log(prices[i]);
             }
 
             // uniswap TWAP
@@ -535,6 +553,8 @@ contract Conjure is IERC20, ReentrancyGuard {
             if (_assetType == 1) {
                 prices[i] = prices[i] * _oracleData[i].weight;
             }
+
+            console.log(prices[i]);
         }
 
         uint[] memory sorted = sort(prices);

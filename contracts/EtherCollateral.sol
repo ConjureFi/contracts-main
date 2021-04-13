@@ -6,6 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {SafeDecimalMath} from "./SafeDecimalMath.sol";
+import "hardhat/console.sol";
 
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/IConjure.sol";
@@ -34,16 +35,16 @@ contract EtherCollateral is ReentrancyGuard {
     uint256 public issueFeeRate;
 
     // Minimum amount of ETH to create loan preventing griefing and gas consumption. Min 0.05 ETH
-    uint256 public immutable minLoanCollateralSize = SafeDecimalMath.unit() / 20;
+    uint256 public constant minLoanCollateralSize = 10 ** 18 / 20;
 
     // Maximum number of loans an account can create
-    uint256 public accountLoanLimit = 50;
+    uint256 public constant accountLoanLimit = 50;
 
     // Liquidation ratio when loans can be liquidated
     uint256 public liquidationRatio;
 
     // Liquidation penalty when loans are liquidated. default 10%
-    uint256 public immutable liquidationPenalty = SafeDecimalMath.unit() / 10;
+    uint256 public constant liquidationPenalty = 10 ** 18 / 10;
 
     // ========== STATE VARIABLES ==========
 
@@ -96,7 +97,6 @@ contract EtherCollateral is ReentrancyGuard {
     // ========== EVENTS ==========
 
     event IssueFeeRateUpdated(uint256 issueFeeRate);
-    event AccountLoanLimitUpdated(uint256 loanLimit);
     event LoanLiquidationOpenUpdated(bool loanLiquidationOpen);
     event LoanCreated(address indexed account, uint256 loanID, uint256 amount);
     event LoanClosed(address indexed account, uint256 loanID);
@@ -176,18 +176,6 @@ contract EtherCollateral is ReentrancyGuard {
 
         issueFeeRate = _issueFeeRate;
         emit IssueFeeRateUpdated(issueFeeRate);
-    }
-
-    /**
-     * @dev Sets the account loan limit to the desired value
-     * allows only values below or equal to ACCOUNT_LOAN_LIMIT_CAP
-     *
-     * @param _loanLimit the new account loan limit
-    */
-    function setAccountLoanLimit(uint256 _loanLimit) external onlyOwner {
-        require(_loanLimit <= ACCOUNT_LOAN_LIMIT_CAP, "Owner cannot set higher than ACCOUNT_LOAN_LIMIT_CAP");
-        accountLoanLimit = _loanLimit;
-        emit AccountLoanLimitUpdated(accountLoanLimit);
     }
 
     /**
@@ -443,13 +431,16 @@ contract EtherCollateral is ReentrancyGuard {
         syntharb().updatePrice();
         uint256 maxLoanAmount = loanAmountFromCollateral(msg.value);
 
+        console.log(_loanAmount);
+        console.log(maxLoanAmount);
+
         // Require requested _loanAmount to be less than maxLoanAmount
         // Issuance ratio caps collateral to loan value at 120%
         require(_loanAmount <= maxLoanAmount, "Loan amount exceeds max borrowing power");
 
         uint256 ethforloan = collateralAmountForLoan(_loanAmount);
         uint256 mintingFee = _calculateMintingFee(msg.value);
-        require(msg.value >= ethforloan + mintingFee, "Too less funds sent to cover fee + collateral");
+        require(msg.value >= ethforloan + mintingFee, "Not enough funds sent to cover fee and collateral");
 
         // Get a Loan ID
         loanID = _incrementTotalLoansCounter();
@@ -830,6 +821,7 @@ contract EtherCollateral is ReentrancyGuard {
         } else {
             mintingFee = _ethAmount.divideDecimalRound(10000 + issueFeeRate).multiplyDecimal(issueFeeRate);
         }
+
     }
 
     /**

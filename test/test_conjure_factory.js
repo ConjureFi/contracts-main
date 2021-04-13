@@ -10,7 +10,7 @@ describe("Conjure Tests", function () {
   let conjureImplementation;
   let etherCollateralImplementation;
   let conjureFactory;
-  let cnj;
+  let mock;
 
   let owner, addr1, addr2, addr3, addr4;
   const deploy = async (name, ...args) => (await ethers.getContractFactory(name)).deploy(...args);
@@ -38,31 +38,33 @@ describe("Conjure Tests", function () {
     etherCollateralImplementation = await COLLATERAL.deploy();
     await etherCollateralImplementation.deployed();
 
-
-    // deploy cnj token
-    cnj = await deploy('CNJ', owner.address, owner.address, Date.now());
-
     // deploy alchemy factory
     conjureFactory = await deploy(
         'ConjureFactory',
         conjureImplementation.address,
         etherCollateralImplementation.address,
-        owner.address,
-        cnj.address
+        owner.address
     );
+
+    // deploy oracle mock
+    const MOCK = await ethers.getContractFactory("ETHUSDOracle_MOCK");
+    mock = await MOCK.deploy();
+    await mock.deployed();
   })
 
   // basic mints
   it("Should be able to mint a new Conjure Contract", async function () {
     // using 0 address for needed addresses we just check if the call works here
-    await conjureFactory.ConjureMint(
-        "UNIT",
-        "TEST",
-        owner.address,
-        "0xFa5a44D3Ba93D666Bf29C8804a36e725ecAc659A",
-        0,
-        "120000000000000000000"
-    )
+    const tx = await conjureFactory.ConjureMint(
+        [[0],[0],[100],[8]],
+        [0x00],
+        ["signature1"],
+        [mock.address],
+        [[1,1], [100,"150000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["TEST", "SYMBOL"],
+        0
+    );
   });
 
   // check conjure implementation
@@ -78,7 +80,7 @@ describe("Conjure Tests", function () {
   });
 
   it("Should revert if the newConjureImplementation in not called by the owner", async function () {
-    await expect(conjureFactory.connect(addr2.address).newConjureImplementation(addr2.address)).to.be.reverted;
+    await expect(conjureFactory.connect(addr2).newConjureImplementation(addr2.address)).to.be.revertedWith("Only factory owner");
   });
 
   // check ethercollateral implementation
@@ -94,7 +96,7 @@ describe("Conjure Tests", function () {
   });
 
   it("Should revert if the newEtherCollateralImplementation in not called by the owner", async function () {
-    await expect(conjureFactory.connect(addr2.address).newEtherCollateralImplementation(addr2.address)).to.be.reverted;
+    await expect(conjureFactory.connect(addr2).newEtherCollateralImplementation(addr2.address)).to.be.revertedWith("Only factory owner");
   });
 
   // check conjure router
@@ -110,7 +112,7 @@ describe("Conjure Tests", function () {
   });
 
   it("Should revert if the newConjureRouter in not called by the owner", async function () {
-    await expect(conjureFactory.connect(addr2.address).newConjureRouter(addr2.address)).to.be.reverted;
+    await expect(conjureFactory.connect(addr2).newConjureRouter(addr2.address)).to.be.revertedWith("Only factory owner");
   });
 
   // check owner
@@ -126,7 +128,7 @@ describe("Conjure Tests", function () {
   });
 
   it("Should revert if the newFactoryOwner in not called by the owner", async function () {
-    await expect(conjureFactory.newFactoryOwner(addr2.address)).to.be.reverted;
+    await expect(conjureFactory.newFactoryOwner(addr2.address)).to.be.revertedWith("Only factory owner");
   });
 
   // return correct router

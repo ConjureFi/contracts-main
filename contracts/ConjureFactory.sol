@@ -48,14 +48,14 @@ contract ConjureFactory {
     */
     function ConjureMint(
         // oracle type, oracle value, oracle weight, oracle decimals array
-        uint256[4][] memory oracleTypesValuesWeightsDecimals,
+        uint256[][4] memory oracleTypesValuesWeightsDecimals,
         bytes[] memory calldataarray,
         string[] memory signatures_,
         address[] memory oracleAddresses_,
         // divisor, asset type // mintingFee_, cratio_
         uint256[2][2] memory divisorAssetTypeMintingFeeRatio,
         // owner, indexedFinanceUniswapv2oracle_, ethusdchainlinkoracle_
-        address[3] memory conjureAddresses,
+        address[] memory conjureAddresses,
         // name, symbol
         string[2] memory namesymbol,
         // inverse asset indicator
@@ -147,7 +147,7 @@ contract ConjureFactory {
 interface IConjure {
     function initialize(
         string[2] memory namesymbol,
-        address[3] memory conjureAddresses,
+        address[] memory conjureAddresses,
         address factoryaddress_,
         address collateralContract
     ) external;
@@ -156,7 +156,7 @@ interface IConjure {
         bool inverse_,
         uint256[2] memory divisorAssetType,
         address[] memory oracleAddresses_,
-        uint256[4][] memory oracleTypesValuesWeightsDecimals,
+        uint256[][4] memory oracleTypesValuesWeightsDecimals,
         string[] memory signatures_,
         bytes[] memory calldata_
     ) external;

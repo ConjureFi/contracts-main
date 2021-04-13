@@ -1,22 +1,15 @@
 // imports
-const {defaultAbiCoder} = require("@ethersproject/abi");
 const {expect} = require("chai");
-const { ethers } = require("hardhat");
-const {waffle} = require("hardhat");
-const zeroaddress = "0x0000000000000000000000000000000000000000";
-const {BigNumber} = require('@ethersproject/bignumber');
-const provider = waffle.provider;
+const {ethers} = require("hardhat");
 
-const encoder = defaultAbiCoder
-
-// test suite for Alchemy
-describe("Test Conjure Functions", function () {
+// test suite for Conjure Factory
+describe("Test Conjure Factory Deploy Functions (Gas)", function () {
 
     // variable to store the deployed smart contract
     let conjureImplementation;
     let etherCollateralImplementation;
     let conjureFactory;
-    let cnj;
+    let mock;
 
     let owner, addr1, addr2, addr3, addr4;
     const deploy = async (name, ...args) => (await ethers.getContractFactory(name)).deploy(...args);
@@ -35,8 +28,6 @@ describe("Test Conjure Functions", function () {
         let temp = await SAFELIB.deploy();
         await temp.deployed();
 
-        console.log(temp.address)
-
         conjureImplementation = await deploy('Conjure');
 
         // deploy conjure factory
@@ -50,17 +41,18 @@ describe("Test Conjure Functions", function () {
         await etherCollateralImplementation.deployed();
 
 
-        // deploy cnj token
-        cnj = await deploy('CNJ', owner.address, owner.address, Date.now());
-
         // deploy alchemy factory
         conjureFactory = await deploy(
             'ConjureFactory',
             conjureImplementation.address,
             etherCollateralImplementation.address,
-            owner.address,
-            cnj.address
+            owner.address
         );
+
+        // deploy oracle mock
+        const MOCK = await ethers.getContractFactory("ETHUSDOracle_MOCK");
+        mock = await MOCK.deploy();
+        await mock.deployed();
     })
 
     describe('Implementations locked', () => {
@@ -75,44 +67,44 @@ describe("Test Conjure Functions", function () {
 
     describe('ConjureMint()', async () => {
         let conjure, ethercollateral;
-
-        it('Should deploy conjure contract', async () => {
+        it('Should show the deployed conjure contracts gas consumption', async () => {
             const tx = await conjureFactory.ConjureMint(
-                "TEST",
-                "SYMBOL",
-                owner.address,
-                owner.address,
-                100,
-                "150000000000000000000"
+                [[0], [0], [100], [8]],
+                [0x00],
+                ["signature1"],
+                [mock.address],
+                [[1, 1], [100, "150000000000000000000"]],
+                [owner.address, owner.address, mock.address],
+                ["TEST", "SYMBOL"],
+                0
             );
-            const {events, cumulativeGasUsed, gasUsed} = await tx.wait();
+            const {events, cumulativeGasUsed, gasUsed,} = await tx.wait();
             console.log(`Cumulative: ${cumulativeGasUsed.toNumber()}`);
             console.log(`Gas: ${gasUsed.toNumber()}`)
             const [event] = events.filter(e => e.event === "NewConjure");
             conjure = await ethers.getContractAt("Conjure", event.args.conjure);
             ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
+
+
         })
 
+        it('Check initialize Conjure', async () => {
+            await expect(conjureImplementation.initialize(
+                ["NAME", "SYMBOL"],
+                [],
+                owner.address,
+                owner.address
+            )).to.be.revertedWith("already initialized");
+        })
 
-        it('Should deploy init conjure contract', async () => {
-            const tx = await conjure.init(
-                1,
-                0,
-                0,
-                ["0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"],
-                [0],
-                ["signature1"],
-                [0x00],
-                [0],
-                [100],
-                [8]
-            );
-            const {events, cumulativeGasUsed, gasUsed} = await tx.wait();
-            console.log(`Cumulative: ${cumulativeGasUsed.toNumber()}`);
-            console.log(`Gas: ${gasUsed.toNumber()}`)
+        it('Check initialize EtherCollateral', async () => {
+            await expect(etherCollateralImplementation.initialize(
+                owner.address,
+                owner.address,
+                owner.address,
+                [1,1]
+            )).to.be.revertedWith("already initialized");
         })
 
     })
-
-
 });
