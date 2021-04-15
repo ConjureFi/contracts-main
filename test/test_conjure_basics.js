@@ -5,6 +5,13 @@ const {waffle} = require("hardhat");
 const {deployContract, solidity} = waffle;
 const provider = waffle.provider;
 const zeroaddress = "0x0000000000000000000000000000000000000000";
+const errorDelta = 1e-4;
+const {BigNumber} = require('@ethersproject/bignumber');
+
+function calcRelativeDiff(expected, actual) {
+  const diff = BigNumber.from(expected).sub(actual).toNumber();
+  return Math.abs(diff / expected);
+}
 
 // test suite for ConjureFactory
 describe("Conjure Basic Tests", function () {
@@ -131,8 +138,11 @@ describe("Conjure Basic Tests", function () {
 
     const walletaftercollect = await provider.getBalance(addr1.address)
 
-    expect(walletafter).to.be.equal(walletbefore.sub(ethers.utils.parseEther("1.0")).sub(txsgas))
-    expect(walletaftercollect).to.be.equal(walletbefore.sub(txsgas).sub(txsgascollect));
+    const diffwallet = calcRelativeDiff(walletafter, walletbefore.sub(ethers.utils.parseEther("1.0")).sub(txsgas))
+    expect(diffwallet).to.be.lessThan(errorDelta);
+
+    const diff = calcRelativeDiff(walletaftercollect, walletbefore.sub(txsgas).sub(txsgascollect))
+    expect(diff).to.be.lessThan(errorDelta);
   });
 
   it("Should not init with odd array values", async function () {

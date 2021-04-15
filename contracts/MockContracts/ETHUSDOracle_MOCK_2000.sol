@@ -4,25 +4,15 @@ pragma solidity 0.7.6;
 /// @author Conjure Finance Team
 /// @title ETHUSDOracle_MOCK
 /// @notice Mock test contract
-/// @notice uses different prices to test pricing
-contract ETHUSDOracle_MOCK {
+/// @notice uses different prices to test pricing and liquidations
+contract ETHUSDOracle_MOCK_2000 {
 
     function latestAnswer()
     public
     pure
     returns (int256 answer)
     {
-        answer = 150000000000;
-    }
-
-    function testwrongcall()
-    public
-    pure
-    returns (int256 answer)
-    {
-        // always reverts for testing
-        require(true == false);
-        answer = 150000000000;
+        answer = 200000000000;
     }
 
     function latestRoundData()
@@ -37,7 +27,7 @@ contract ETHUSDOracle_MOCK {
     )
     {
         roundId = 1;
-        answer = 150000000000;
+        answer = 200000000000;
         startedAt = 1;
         updatedAt = 1;
         answeredInRound = 1;

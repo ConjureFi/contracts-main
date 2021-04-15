@@ -124,7 +124,7 @@ contract EtherCollateral is ReentrancyGuard {
         _;
     }
 
-    // only owner view for modifer
+    // only owner view for modifier
     function _onlyOwner() private view {
         require(msg.sender == owner, "Only the contract owner may perform this action");
     }
@@ -295,6 +295,9 @@ contract EtherCollateral is ReentrancyGuard {
      */
     function calculateAmountToLiquidate(uint debtBalance, uint collateral) public view returns (uint) {
         uint unit = SafeDecimalMath.unit();
+
+        console.log("debtBalance: %s", debtBalance);
+        console.log("collateral: %s", collateral);
 
         uint dividend = debtBalance.sub(collateral.divideDecimal(liquidationRatio));
         uint divisor = unit.sub(unit.add(liquidationPenalty).divideDecimal(liquidationRatio));
@@ -609,6 +612,13 @@ contract EtherCollateral is ReentrancyGuard {
         uint currentprice = syntharb().getLatestPrice();
         uint currentethusdprice = syntharb().getLatestETHUSDPrice();
 
+        console.log("liquidation");
+        console.log("currentprice: %s", currentprice);
+        console.log("currentethusdprice: %s", currentethusdprice);
+        console.log("collateralRatio: %s", collateralRatio);
+        console.log("liquidationRatio: %s", liquidationRatio);
+        console.log("collateralizationRatio: %s", collateralizationRatio);
+
         require(collateralRatio < liquidationRatio, "Collateral ratio above liquidation ratio");
 
         // calculate amount to liquidate to fix ratio including accrued interest
@@ -619,11 +629,15 @@ contract EtherCollateral is ReentrancyGuard {
             collateralValue
         );
 
+        console.log("liquidationAmountUSD: %s", liquidationAmountUSD);
+
         // calculate back the synth amount from the usd nomination
         uint256 liquidationAmount = liquidationAmountUSD.divideDecimal(currentprice);
+        console.log("liquidationAmount: %s", liquidationAmount);
 
         // cap debt to liquidate
         uint256 amountToLiquidate = liquidationAmount < _debtToCover ? liquidationAmount : _debtToCover;
+        console.log("amountToLiquidate: %s", amountToLiquidate);
 
         // burn funds from msg.sender for amount to liquidate
         syntharb().burn(msg.sender, amountToLiquidate);
@@ -631,25 +645,42 @@ contract EtherCollateral is ReentrancyGuard {
         // decrease issued totalIssuedSynths
         totalIssuedSynths = totalIssuedSynths.sub(amountToLiquidate);
 
-        // Collateral value to redeem
+        // Collateral value to redeem in ETH
         uint256 collateralRedeemed = amountToLiquidate.multiplyDecimal(currentprice).divideDecimal(currentethusdprice);
+        console.log("collateralRedeemed: %s", collateralRedeemed);
 
-        // Add penalty
+        // Add penalty in ETH
         uint256 totalCollateralLiquidated = collateralRedeemed.multiplyDecimal(
             SafeDecimalMath.unit().add(liquidationPenalty)
         );
 
-        // save amount owed for later check if it was a full liquidation
-        uint256 amountOwed = synthLoan.loanAmount;
+        console.log("totalCollateralLiquidated: %s", totalCollateralLiquidated);
 
         // update remaining loanAmount less amount paid and update accrued interests less interest paid
         _updateLoan(synthLoan, synthLoan.loanAmount.sub(amountToLiquidate));
 
-        // update remaining collateral on loan
-        _updateLoanCollateral(synthLoan, synthLoan.collateralAmount.sub(totalCollateralLiquidated));
+        console.log(totalCollateralLiquidated);
+
+        // indicates if we need a full closure
+        bool close;
+
+        if (synthLoan.collateralAmount <= totalCollateralLiquidated) {
+            close = true;
+            // update remaining collateral on loan
+            _updateLoanCollateral(synthLoan, 0);
+            totalCollateralLiquidated = synthLoan.collateralAmount;
+        }
+        else {
+            // update remaining collateral on loan
+            _updateLoanCollateral(synthLoan, synthLoan.collateralAmount.sub(totalCollateralLiquidated));
+        }
+
+        // Send liquidated ETH collateral to msg.sender --> send before checking for full closure cause
+        // in case of full closure we dont want to send funds back to the loan creator
+        msg.sender.transfer(totalCollateralLiquidated);
 
         // check if we have a full closure here
-        if (amountToLiquidate >= amountOwed) {
+        if (close) {
             _closeLoan(synthLoan.account, synthLoan.loanID, true);
             // emit loan liquidation event
             emit LoanLiquidated(
@@ -667,9 +698,6 @@ contract EtherCollateral is ReentrancyGuard {
                 totalCollateralLiquidated
             );
         }
-
-        // Send liquidated ETH collateral to msg.sender
-        msg.sender.transfer(totalCollateralLiquidated);
     }
 
     // ========== PRIVATE FUNCTIONS ==========
