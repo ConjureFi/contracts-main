@@ -371,7 +371,6 @@ describe("Conjure Pricing Core Tests", function () {
 
     // now set the inverse asset to increase the price
     await mockinverse.setState(2);
-    console.log(await mockinverse.state())
 
     // call price update on the conjure asset
     conjure.updatePrice();
@@ -413,7 +412,6 @@ describe("Conjure Pricing Core Tests", function () {
 
     // now set the inverse asset to increase the price
     await mockinverse.setState(3);
-    console.log(await mockinverse.state())
 
     // call price update on the conjure asset
     conjure.updatePrice();

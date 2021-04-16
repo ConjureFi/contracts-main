@@ -24,8 +24,6 @@ describe("Conjure Tests", function () {
     let temp = await SAFELIB.deploy();
     await temp.deployed();
 
-    console.log(temp.address)
-
     conjureImplementation = await deploy('Conjure');
 
     // deploy conjure factory

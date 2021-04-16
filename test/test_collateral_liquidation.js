@@ -21,16 +21,11 @@ function calculateTotalCollateralRedeemed(amountToLiquidate, ethprice, assetpric
 
   // Collateral value to redeem in ETH
   let collateralRedeemed = amountToLiquidate.mul(assetprice).div(unit).mul(unit).div(ethprice)
-  console.log("collateralRedeemed: %s", collateralRedeemed);
-
-  console.log(collateralRedeemed.toString())
 
   // Add penalty in ETH
   let totalCollateralLiquidated = collateralRedeemed.mul(
       unit.add(liquidationPenalty)
   ).div(unit);
-
-  console.log(totalCollateralLiquidated.toString())
 
   return totalCollateralLiquidated;
 }
@@ -50,28 +45,11 @@ function getTotalLiquidatedAndAmount(synthloan, ethprice, assetprice, debtToCove
   assetprice = assetprice.mul("10000000000")
   ethprice = ethprice.mul("10000000000")
 
-  console.log(assetprice.toString())
-  console.log(ethprice.toString())
-  console.log(synthloan.loanAmount.toString())
-  console.log(synthloan.collateralAmount.toString())
-
   const loanvalue = synthloan.loanAmount.mul(assetprice).div(UNIT)
   const collvalue = synthloan.collateralAmount.mul(ethprice).div(UNIT)
 
-  const ratio = collvalue.mul(UNIT).div(loanvalue)
-
-  console.log(loanvalue.toString())
-  console.log(collvalue.toString())
-  console.log(ratio.toString())
-
   const amountToLiquidate = calculateAmountToLiquidate(loanvalue, collvalue, liquiRatio)
-
-  console.log(amountToLiquidate.toString())
-
   const liquiamount =  amountToLiquidate.mul(UNIT).div(assetprice)
-
-  console.log(liquiamount.toString())
-  console.log(typeof liquiamount)
 
   return liquiamount.lt(debtToCover)  ? liquiamount : debtToCover
 }

@@ -6,7 +6,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {SafeDecimalMath} from "./SafeDecimalMath.sol";
-import "hardhat/console.sol";
 
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/IConjure.sol";
@@ -296,9 +295,6 @@ contract EtherCollateral is ReentrancyGuard {
     function calculateAmountToLiquidate(uint debtBalance, uint collateral) public view returns (uint) {
         uint unit = SafeDecimalMath.unit();
 
-        console.log("debtBalance: %s", debtBalance);
-        console.log("collateral: %s", collateral);
-
         uint dividend = debtBalance.sub(collateral.divideDecimal(liquidationRatio));
         uint divisor = unit.sub(unit.add(liquidationPenalty).divideDecimal(liquidationRatio));
 
@@ -433,9 +429,6 @@ contract EtherCollateral is ReentrancyGuard {
         // Calculate issuance amount based on issuance ratio
         syntharb().updatePrice();
         uint256 maxLoanAmount = loanAmountFromCollateral(msg.value);
-
-        console.log(_loanAmount);
-        console.log(maxLoanAmount);
 
         // Require requested _loanAmount to be less than maxLoanAmount
         // Issuance ratio caps collateral to loan value at 120%
@@ -612,13 +605,6 @@ contract EtherCollateral is ReentrancyGuard {
         uint currentprice = syntharb().getLatestPrice();
         uint currentethusdprice = syntharb().getLatestETHUSDPrice();
 
-        console.log("liquidation");
-        console.log("currentprice: %s", currentprice);
-        console.log("currentethusdprice: %s", currentethusdprice);
-        console.log("collateralRatio: %s", collateralRatio);
-        console.log("liquidationRatio: %s", liquidationRatio);
-        console.log("collateralizationRatio: %s", collateralizationRatio);
-
         require(collateralRatio < liquidationRatio, "Collateral ratio above liquidation ratio");
 
         // calculate amount to liquidate to fix ratio including accrued interest
@@ -629,15 +615,11 @@ contract EtherCollateral is ReentrancyGuard {
             collateralValue
         );
 
-        console.log("liquidationAmountUSD: %s", liquidationAmountUSD);
-
         // calculate back the synth amount from the usd nomination
         uint256 liquidationAmount = liquidationAmountUSD.divideDecimal(currentprice);
-        console.log("liquidationAmount: %s", liquidationAmount);
 
         // cap debt to liquidate
         uint256 amountToLiquidate = liquidationAmount < _debtToCover ? liquidationAmount : _debtToCover;
-        console.log("amountToLiquidate: %s", amountToLiquidate);
 
         // burn funds from msg.sender for amount to liquidate
         syntharb().burn(msg.sender, amountToLiquidate);
@@ -647,19 +629,14 @@ contract EtherCollateral is ReentrancyGuard {
 
         // Collateral value to redeem in ETH
         uint256 collateralRedeemed = amountToLiquidate.multiplyDecimal(currentprice).divideDecimal(currentethusdprice);
-        console.log("collateralRedeemed: %s", collateralRedeemed);
 
         // Add penalty in ETH
         uint256 totalCollateralLiquidated = collateralRedeemed.multiplyDecimal(
             SafeDecimalMath.unit().add(liquidationPenalty)
         );
 
-        console.log("totalCollateralLiquidated: %s", totalCollateralLiquidated);
-
         // update remaining loanAmount less amount paid and update accrued interests less interest paid
         _updateLoan(synthLoan, synthLoan.loanAmount.sub(amountToLiquidate));
-
-        console.log(totalCollateralLiquidated);
 
         // indicates if we need a full closure
         bool close;

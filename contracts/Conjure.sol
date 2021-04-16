@@ -9,8 +9,6 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import "./lib/FixedPoint.sol";
 import "./interfaces/IEtherCollateral.sol";
-import "./interfaces/IndexedFinanceUniswapV2OracleInterface.sol";
-import "hardhat/console.sol";
 
 /// @author Conjure Finance Team
 /// @title Conjure
@@ -76,7 +74,7 @@ contract Conjure is IERC20, ReentrancyGuard {
     uint256 public _numoracles;
 
     // deployed indexed finance uniswap v2 oracle
-    IndexedFinanceUniswapV2OracleInterface public _indexedFinanceUniswapV2Oracle;
+    address public _indexedFinanceUniswapV2Oracle;
 
     // the latest observed price
     uint256 internal _latestobservedprice;
@@ -153,7 +151,7 @@ contract Conjure is IERC20, ReentrancyGuard {
         _name = namesymbol[0];
         _symbol = namesymbol[1];
 
-        _indexedFinanceUniswapV2Oracle = IndexedFinanceUniswapV2OracleInterface(conjureAddresses[1]);
+        _indexedFinanceUniswapV2Oracle = conjureAddresses[1];
         ethusdchainlinkoracle = conjureAddresses[2];
         _factoryContract = factoryaddress_;
 
@@ -193,7 +191,6 @@ contract Conjure is IERC20, ReentrancyGuard {
         // push the values into the oracle struct for further processing
         for (uint i = 0; i < oracleAddresses_.length; i++) {
             require(oracleTypesValuesWeightsDecimals[3][i] <= 18, "Decimals too high");
-            console.log(oracleTypesValuesWeightsDecimals[3][i] );
             _oracleData.push(_oracleStruct({
                 oracleaddress: oracleAddresses_[i],
                 oracleType: oracleTypesValuesWeightsDecimals[0][i],
@@ -298,8 +295,6 @@ contract Conjure is IERC20, ReentrancyGuard {
         ,
         ) = priceFeed.latestRoundData();
 
-        console.log("%s", uint(price));
-
         return uint(price);
     }
 
@@ -315,8 +310,6 @@ contract Conjure is IERC20, ReentrancyGuard {
         ,
         ,
         ) = AggregatorV3Interface(ethusdchainlinkoracle).latestRoundData();
-
-        console.log("%s", uint(price));
 
         return uint(price) * 10 ** (_maximumDecimals - chainLinkReturnDecimals);
     }
@@ -402,7 +395,9 @@ contract Conjure is IERC20, ReentrancyGuard {
         } else if (y != 0) {
             z = 1;
         }
-        // else z = 0
+        else {
+            z = 0;
+        }
     }
 
     /**
@@ -428,8 +423,6 @@ contract Conjure is IERC20, ReentrancyGuard {
     */
     function updatePrice() public {
         uint256 returnPrice = updateInternalPrice();
-
-        console.log(returnPrice);
 
         // if it is an inverse asset we do price = _deploymentPrice - (current price - _deploymentPrice)
         // --> 2 * deployment price - current price
@@ -461,73 +454,23 @@ contract Conjure is IERC20, ReentrancyGuard {
         // storing all in an array for further processing
         uint[] memory prices = new uint[](_oracleData.length);
 
-        console.log("here");
-
         for (uint i = 0; i < _oracleData.length; i++) {
 
             // chainlink oracle
             if (_oracleData[i].oracleType == 0) {
+                require(_assetType < 2, "Index Asset Types not compatible with chainlink");
+
                 AggregatorV3Interface pricefeed = AggregatorV3Interface(_oracleData[i].oracleaddress);
                 prices[i] = getLatestPrice(pricefeed);
 
-                console.log(prices[i]);
-
                 // norming price
                 if (_maximumDecimals != _oracleData[i].decimals) {
                     prices[i] = prices[i] * 10 ** (_maximumDecimals - _oracleData[i].decimals);
-                    console.log("in it");
-                    console.log(_maximumDecimals);
-                    console.log(_oracleData[i].decimals);
-                    console.log(_maximumDecimals - _oracleData[i].decimals);
-                }
-
-                console.log(prices[i]);
-            }
-
-            // uniswap TWAP
-            if (_oracleData[i].oracleType == 1) {
-                // check if update price needed
-                if (_indexedFinanceUniswapV2Oracle.canUpdatePrice(_oracleData[i].oracleaddress) == true) {
-                    // update price
-                    _indexedFinanceUniswapV2Oracle.updatePrice(_oracleData[i].oracleaddress);
-                }
-
-                // grab latest price after update decode between 0 and 10 days
-                // will revert if no price is found
-                FixedPoint.uq112x112 memory price = _indexedFinanceUniswapV2Oracle.computeAverageTokenPrice(
-                    _oracleData[i].oracleaddress,
-                    0,
-                    3600 * 24 * 10
-                );
-
-                // since this oracle is using token / eth prices we have to norm it to usd prices
-                prices[i] = price.mul(getLatestETHUSDPrice()).decode144();
-
-                // get total supply for indexes
-                uint totalsupply = IERC20(_oracleData[i].oracleaddress).totalSupply();
-
-                // norming price
-                if (_maximumDecimals != _oracleData[i].decimals) {
-                    prices[i] = prices[i] * 10 ** (_maximumDecimals - _oracleData[i].decimals);
-                    totalsupply = totalsupply * 10 ** (_maximumDecimals - _oracleData[i].decimals);
-                }
-
-                // index use mcap
-                if (_assetType == 2) {
-                    prices[i] = (prices[i].mul(totalsupply) / UNIT);
-                }
-
-                // sqrt mcap
-                if (_assetType == 3) {
-                    // mcap
-                    prices[i] =prices[i].mul(totalsupply) / UNIT;
-                    // sqrt mcap
-                    prices[i] = sqrt(prices[i]);
                 }
             }
 
-            // custom oracle
-            if (_oracleData[i].oracleType == 2) {
+            // custom oracle and uniswap
+            else {
                 string memory signature = _oracleData[i].signature;
                 bytes memory calldatas = _oracleData[i].calldatas;
 
@@ -542,11 +485,50 @@ contract Conjure is IERC20, ReentrancyGuard {
                 (bool success, bytes memory data) = _oracleData[i].oracleaddress.call{value:_oracleData[i].values}(callData);
                 require(success, "Call unsuccessful");
 
-                prices[i] = abi.decode(data, (uint));
+                // uniswap TWAP
+                if (_oracleData[i].oracleType == 1) {
+                    FixedPoint.uq112x112 memory price = abi.decode(data, (FixedPoint.uq112x112));
 
-                // norming price
-                if (_maximumDecimals != _oracleData[i].decimals) {
-                    prices[i] = prices[i] * 10 ** (_maximumDecimals - _oracleData[i].decimals);
+                    // get the address of the uniswap token from the callData
+                    (
+                    address tokenAddress
+                    ,
+                    ,
+                    ) = abi.decode(calldatas, (address, uint256, uint256));
+
+                    // since this oracle is using token / eth prices we have to norm it to usd prices
+                    prices[i] = price.mul(getLatestETHUSDPrice()).decode144();
+
+                    // get total supply for indexes
+                    uint totalsupply = IERC20(tokenAddress).totalSupply();
+
+                    // price is always 18 decimal since the oracle returns the eth price and we get 18 decimals
+                    if (_maximumDecimals != _oracleData[i].decimals) {
+                        totalsupply = totalsupply * 10 ** (_maximumDecimals - _oracleData[i].decimals);
+                    }
+
+                    // index use mcap
+                    if (_assetType == 2) {
+                        prices[i] = (prices[i].mul(totalsupply) / UNIT);
+                    }
+
+                    // sqrt mcap
+                    if (_assetType == 3) {
+                        // mcap
+                        prices[i] =prices[i].mul(totalsupply) / UNIT;
+                        // sqrt mcap
+                        prices[i] = sqrt(prices[i]);
+                    }
+                }
+                else {
+                    require(_assetType < 2, "Index Asset Types not compatible with custom oracles");
+
+                    prices[i] = abi.decode(data, (uint));
+
+                    // norming price
+                    if (_maximumDecimals != _oracleData[i].decimals) {
+                        prices[i] = prices[i] * 10 ** (_maximumDecimals - _oracleData[i].decimals);
+                    }
                 }
             }
 
@@ -554,8 +536,6 @@ contract Conjure is IERC20, ReentrancyGuard {
             if (_assetType == 1) {
                 prices[i] = prices[i] * _oracleData[i].weight;
             }
-
-            console.log(prices[i]);
         }
 
         uint[] memory sorted = sort(prices);
@@ -589,10 +569,8 @@ contract Conjure is IERC20, ReentrancyGuard {
     */
 
     /**
-    * fallback function for collection funds
+    * receive function to receive funds
     */
-    fallback() external payable {}
-
     receive() external payable {}
 
     /**

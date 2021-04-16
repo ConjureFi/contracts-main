@@ -403,11 +403,6 @@ describe("EtherCollateral Tests", function () {
         let contractBalanceAfter = await provider.getBalance(conjure.address);
         let routerBalanceAfter = await provider.getBalance(addr4.address);
 
-        console.log(contractBalanceBefore)
-        console.log(routerBalanceBefore)
-        console.log(contractBalanceAfter)
-        console.log(routerBalanceAfter)
-
         const routerfee = ethvalue.mul("100").div("10100").div("4")
         const expectrouter = routerBalanceBefore.add(routerfee)
 
@@ -436,7 +431,6 @@ describe("EtherCollateral Tests", function () {
 
         await ethercollateral.closeLoan(1);
         let loans = await ethercollateral.openLoanIDsByAccount(owner.address)
-        console.log(loans)
 
         expect(loans.length).to.be.equal(0);
     });
