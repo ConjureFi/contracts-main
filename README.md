@@ -1,6 +1,7 @@
 # Conjure
 [![Twitter Follow](https://img.shields.io/twitter/follow/ConjureFi?label=Conjure.Finance&style=social)](https://twitter.com/ConjureFi/)
 [![Build Status](https://travis-ci.com/ConjureFi/contracts-main.svg?branch=main)](https://travis-ci.com/ConjureFi/contracts-main)
+[![Coverage Status](https://coveralls.io/repos/github/ConjureFi/contracts-main/badge.svg?branch=main)](https://coveralls.io/github/ConjureFi/contracts-main?branch=main)
 
 Repository for the Conjure Contracts
 
