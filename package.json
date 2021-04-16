@@ -2,7 +2,7 @@
   "name": "conjure_contracts",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "hardhat.config.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "coverage": "npx hardhat coverage --solcoverjs ./.solcover.js"
