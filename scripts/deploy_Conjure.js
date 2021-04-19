@@ -1,10 +1,10 @@
 async function main() {
     // We get the contract to deploy
 
-    const ConjureFactory = await ethers.getContractFactory("ConjureFactory");
-    const conjure = await ConjureFactory.deploy("","","");
+    const Conjure = await ethers.getContractFactory("Conjure");
+    const conjure = await Conjure.deploy();
     await conjure.deployed();
-    console.log("ConjureFactory deployed to:", conjure.address);
+    console.log("Conjure deployed to:", conjure.address);
 
 }
 

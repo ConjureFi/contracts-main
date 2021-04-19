@@ -2,6 +2,7 @@ require("@nomiclabs/hardhat-waffle");
 require('hardhat-contract-sizer');
 require("@nomiclabs/hardhat-etherscan");
 require("solidity-coverage");
+require('dotenv').config()
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -11,7 +12,6 @@ module.exports = {
   defaultNetwork: "hardhat",
   networks: {
 
-    // do a mainnet fork to work with oracle data
     hardhat: {
 	}
   },

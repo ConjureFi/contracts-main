@@ -176,6 +176,52 @@ describe("Conjure Pricing Core Tests", function () {
     expect(lastprice).to.be.equal("1500000000000000000000");
   });
 
+  it("Should get the price median right for a 3 oracles", async function () {
+    const tx = await conjureFactory.ConjureMint(
+        [[0,2,0],[0,0,0],[30,30,30],[8,8,18]],
+        [0x00, 0x00, 0x00],
+        ["latestAnswer()", "latestAnswer()", "latestAnswer()"],
+        [mock2000.address, mock3000.address , mock18dec.address],
+        [[1,0], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        false
+    );
+
+    const {events} = await tx.wait();
+    const [event] = events.filter(e => e.event === "NewConjure");
+    conjure = await ethers.getContractAt("Conjure", event.args.conjure);
+    ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
+
+    let lastprice = await conjure.getLatestPrice()
+
+    // should return the avg price of 2000,3000,1500
+    expect(lastprice).to.be.equal("2000000000000000000000");
+  });
+
+  it("Should get the price median right for a 4 oracles", async function () {
+    const tx = await conjureFactory.ConjureMint(
+        [[0,2,0,0],[0,0,0,0],[30,30,30,10],[8,8,18,8]],
+        [0x00, 0x00, 0x00, 0x00],
+        ["latestAnswer()", "latestAnswer()", "latestAnswer()", "latestAnswer()"],
+        [mock2000.address, mock3000.address , mock18dec.address, mock2000.address],
+        [[1,0], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        false
+    );
+
+    const {events} = await tx.wait();
+    const [event] = events.filter(e => e.event === "NewConjure");
+    conjure = await ethers.getContractAt("Conjure", event.args.conjure);
+    ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
+
+    let lastprice = await conjure.getLatestPrice()
+
+    // should return the avg price of 2000,3000,1500,2000
+    expect(lastprice).to.be.equal("2000000000000000000000");
+  });
+
   it("Should get the right avg price for a single basket", async function () {
     const tx = await conjureFactory.ConjureMint(
         [[2],[0],[100],[8]],
