@@ -111,6 +111,7 @@ contract EtherCollateral is ReentrancyGuard {
     event CollateralWithdrawn(address indexed account, uint256 loanID, uint256 amountWithdrawn, uint256 collateralAfter);
     event LoanRepaid(address indexed account, uint256 loanID, uint256 repaidAmount, uint256 newLoanAmount);
     event AssetClosed();
+    event NewOwner(address newOwner);
 
     constructor() {
         // Don't allow implementation to be initialized.
@@ -146,16 +147,14 @@ contract EtherCollateral is ReentrancyGuard {
     {
         require(_factoryContract == address(0), "already initialized");
         require(_factoryaddress != address(0), "factory can not be null");
-        // max 2.5% fee for minting
-        require(_mintingFeeRatio[0] <= 250, "Minting fee too high");
         // c-ratio greater 100 and less or equal 1000
         require(_mintingFeeRatio[1] <= ONE_THOUSAND, "C-Ratio Too high");
         require(_mintingFeeRatio[1] > ONE_HUNDRED_TEN, "C-Ratio Too low");
 
         arbasset = _asset;
         owner = _owner;
+        setIssueFeeRateInternal(_mintingFeeRatio[0]);
         _factoryContract = _factoryaddress;
-        issueFeeRate = _mintingFeeRatio[0];
         collateralizationRatio = _mintingFeeRatio[1];
         liquidationRatio = _mintingFeeRatio[1] / 100;
     }
@@ -163,18 +162,38 @@ contract EtherCollateral is ReentrancyGuard {
     // ========== SETTERS ==========
 
     /**
+     * @dev lets the owner change the contract owner
+     *
+     * @param _newOwner the new owner address of the contract
+    */
+    function changeOwner(address payable _newOwner) external onlyOwner {
+        owner = _newOwner;
+        emit NewOwner(_newOwner);
+    }
+
+    /**
+     * @dev Sets minting fee of the asset internal function
+     *
+     * @param _issueFeeRate the new minting fee
+    */
+    function setIssueFeeRateInternal(uint256 _issueFeeRate) internal {
+        // max 2.5% fee for minting
+        require(_issueFeeRate <= 250, "Minting fee too high");
+
+        issueFeeRate = _issueFeeRate;
+        emit IssueFeeRateUpdated(issueFeeRate);
+    }
+
+    /**
      * @dev Sets minting fee of the asset
      *
      * @param _issueFeeRate the new minting fee
     */
     function setIssueFeeRate(uint256 _issueFeeRate) public onlyOwner {
-        // max 2.5% fee for minting
-        require(_issueFeeRate <= 250, "Minting fee too high");
         // fee can only be lowered
         require(_issueFeeRate <= issueFeeRate, "Fee can only be lowered");
 
-        issueFeeRate = _issueFeeRate;
-        emit IssueFeeRateUpdated(issueFeeRate);
+        setIssueFeeRateInternal(_issueFeeRate);
     }
 
     /**
@@ -307,27 +326,25 @@ contract EtherCollateral is ReentrancyGuard {
      * @param _account the opener of the loans
      * @return all open loans by ID in form of an array
     */
-    function openLoanIDsByAccount(address _account) external view returns (uint256[] memory) {
+    function getOpenLoanIDsByAccount(address _account) external view returns (uint256[] memory) {
         SynthLoanStruct[] memory synthLoans = accountsSynthLoans[_account];
 
         uint256[] memory _openLoanIDs = new uint256[](synthLoans.length);
-        uint256 _counter = 0;
+        uint256 j;
 
-        for (uint256 i = 0; i < synthLoans.length; i++) {
+        for (uint i = 0; i < synthLoans.length; i++) {
             if (synthLoans[i].timeClosed == 0) {
-                _openLoanIDs[_counter] = synthLoans[i].loanID;
-                _counter++;
+                _openLoanIDs[j++] = synthLoans[i].loanID;
             }
         }
-        // Create the fixed size array to return
-        uint256[] memory _result = new uint256[](_counter);
 
-        // Copy loanIDs from dynamic array to fixed array
-        for (uint256 j = 0; j < _counter; j++) {
-            _result[j] = _openLoanIDs[j];
+        // Change the list size of the array in place
+        assembly {
+            mstore(_openLoanIDs, j)
         }
-        // Return an array with list of open Loan IDs
-        return _result;
+
+        // Return the resized array
+        return _openLoanIDs;
     }
 
     /**
@@ -652,10 +669,6 @@ contract EtherCollateral is ReentrancyGuard {
             _updateLoanCollateral(synthLoan, synthLoan.collateralAmount.sub(totalCollateralLiquidated));
         }
 
-        // Send liquidated ETH collateral to msg.sender --> send before checking for full closure cause
-        // in case of full closure we dont want to send funds back to the loan creator
-        msg.sender.transfer(totalCollateralLiquidated);
-
         // check if we have a full closure here
         if (close) {
             _closeLoan(synthLoan.account, synthLoan.loanID, true);
@@ -675,6 +688,9 @@ contract EtherCollateral is ReentrancyGuard {
                 totalCollateralLiquidated
             );
         }
+
+        // Send liquidated ETH collateral to msg.sender
+        msg.sender.transfer(totalCollateralLiquidated);
     }
 
     // ========== PRIVATE FUNCTIONS ==========

@@ -39,7 +39,7 @@ contract Conjure is IERC20, ReentrancyGuard {
     // a record of allowances for a specific address by address to address mapping
     mapping(address => mapping(address => uint256)) private _allowances;
 
-    // the owner and creator of the contract
+    // the owner of the contract
     address payable public _owner;
 
     // the type of the arb asset (single asset, arb asset)

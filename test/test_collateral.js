@@ -119,7 +119,6 @@ describe("EtherCollateral Tests", function () {
 
     it("Should not to increase the minting fee and also not to set it too high", async function () {
         await expect(ethercollateral.setIssueFeeRate(200)).to.be.revertedWith("Fee can only be lowered");
-        await expect(ethercollateral.setIssueFeeRate(300)).to.be.revertedWith("Minting fee too high");
     });
 
     it("Should not be able to call asset closed", async function () {
@@ -148,7 +147,7 @@ describe("EtherCollateral Tests", function () {
         let numloans = await ethercollateral.totalOpenLoanCount()
         let totalLoansCreated = await ethercollateral.totalLoansCreated()
         let totalIssuedSynths = await ethercollateral.totalIssuedSynths()
-        let openLoanIDsByAccount = await ethercollateral.openLoanIDsByAccount(owner.address)
+        let openLoanIDsByAccount = await ethercollateral.getOpenLoanIDsByAccount(owner.address)
         let getLoan = await ethercollateral.getLoan(owner.address, openLoanIDsByAccount[0])
 
         expect(numloans).to.be.equal("1");
@@ -165,7 +164,7 @@ describe("EtherCollateral Tests", function () {
         const collateralizationRatio = await ethercollateral.collateralizationRatio();
         const issueratio = await ethercollateral.issuanceRatio();
         const mintingfee = await ethercollateral.getMintingFee(owner.address, 1);
-        const openloans = await ethercollateral.openLoanIDsByAccount(owner.address);
+        const openloans = await ethercollateral.getOpenLoanIDsByAccount(owner.address);
 
         const unit = BigNumber.from("1000000000000000000");
         const calc_ratio = BigNumber.from("100000000000000000000").mul(unit).div(collateralizationRatio);
@@ -430,7 +429,7 @@ describe("EtherCollateral Tests", function () {
     it("should get actual synth loans", async function () {
 
         await ethercollateral.closeLoan(1);
-        let loans = await ethercollateral.openLoanIDsByAccount(owner.address)
+        let loans = await ethercollateral.getOpenLoanIDsByAccount(owner.address)
 
         expect(loans.length).to.be.equal(0);
     });
@@ -580,6 +579,33 @@ describe("EtherCollateral Tests", function () {
         conjure.connect(addr1).transferFrom(owner.address, addr2.address, "1")
         amount = await conjure.balanceOf(addr1.address);
         expect(amount).to.be.equal("1")
+
+    });
+
+    it("Should be able to change the owner", async function () {
+        const tx = await conjureFactory.ConjureMint(
+            [[0], [0], [100], [8]],
+            [0x00],
+            ["signature1"],
+            [mock.address],
+            [[1, 0], [100, "120000000000000000000"]],
+            [owner.address, owner.address, mock.address],
+            ["NAME", "SYMBOL"],
+            false
+        );
+
+        const {events} = await tx.wait();
+        const [event] = events.filter(e => e.event === "NewConjure");
+        conjure = await ethers.getContractAt("Conjure", event.args.conjure);
+        ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
+
+        await expect(ethercollateral.connect(addr1).changeOwner(addr1.address)).to.be.revertedWith("Only the contract owner may perform this action");
+
+        await ethercollateral.changeOwner(addr1.address)
+
+        let owneraddress = await ethercollateral.owner();
+
+        expect(addr1.address).to.be.equal(owneraddress);
 
     });
 });
