@@ -94,6 +94,11 @@ contract ConjureFactory {
     }
 
     /**
+    * receive function to receive funds
+    */
+    receive() external payable {}
+
+    /**
      * @dev gets the address of the current factory owner
      *
      * @return the address of the conjure router
