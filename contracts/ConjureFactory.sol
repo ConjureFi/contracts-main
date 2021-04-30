@@ -38,7 +38,7 @@ contract ConjureFactory {
      *  @param calldataarray thr calldata array for the oracle setup
      *  @param signatures_ the array containing the signatures if the oracles
      *  @param oracleAddresses_ the addresses array of the oracles containing 2 addresses: 1. address to call,
-     *         2. address of the token for supply if needed can be empty
+     *         2. address of the token for supply if needed
      *  @param divisorAssetTypeMintingFeeRatio array containing 2 arrays: 1. divisor + assetType, 2. mintingFee + cratio
      *  @param conjureAddresses containing the 3 conjure needed addresses: owner, indexedFinanceUniswapv2oracle_,
                ethusdchainlinkoracle_

@@ -166,7 +166,7 @@ contract Conjure is IERC20, ReentrancyGuard {
      * @param inverse_ indicated it the asset is an inverse asset or not
      * @param divisorAssetType array containing the divisor and the asset type
      * @param oracleAddresses_ the array holding the oracle addresses 1. address to call,
-     *        2. address of the token for supply if needed can be empty
+     *        2. address of the token for supply if needed
      * @param oracleTypesValuesWeightsDecimals array holding the oracle types,values,weights and decimals
      * @param signatures_ array holding the oracle signatures
      * @param calldata_ array holding the oracle calldata
