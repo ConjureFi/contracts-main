@@ -27,4 +27,22 @@ contract ERC20_SUPPLY_MOCK {
 
         return 0;
     }
+
+    function decimals()
+    external
+    view
+    returns (uint256)
+    {
+        if (state == 0) {
+            return 18;
+        }
+        if (state == 1) {
+            return 17;
+        }
+        if (state == 2) {
+            return 19;
+        }
+
+        return 0;
+    }
 }

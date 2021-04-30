@@ -13,7 +13,7 @@ function calcRelativeDiff(expected, actual) {
 }
 
 // test suite for Conjure
-describe("Conjure Pricing Uniswap Tests", function () {
+describe("Conjure Pricing Market Cap Tests", function () {
 
   // variable to store the deployed smart contract
   let conjureImplementation;
@@ -104,7 +104,7 @@ describe("Conjure Pricing Uniswap Tests", function () {
         [[1],[0],[100],[18]],
         [parameters],
         ["computeAverageTokenPrice(address,uint256,uint256)"],
-        [mockunioracle.address],
+        [[mockunioracle.address], [mocksupply.address]],
         [[1,0], [100,"120000000000000000000"]],
         [owner.address,owner.address,mock.address],
         ["NAME", "SYMBOL"],
@@ -134,7 +134,7 @@ describe("Conjure Pricing Uniswap Tests", function () {
         [[1],[0],[100],[18]],
         [parameters],
         ["computeAverageTokenPrice(address,uint256,uint256)"],
-        [mockunioracle.address],
+        [[mockunioracle.address],[mocksupply.address]],
         [[1,2], [100,"120000000000000000000"]],
         [owner.address,owner.address,mock.address],
         ["NAME", "SYMBOL"],
@@ -152,6 +152,36 @@ describe("Conjure Pricing Uniswap Tests", function () {
     expect(diff).to.be.lessThan(errorDelta);
   });
 
+  it("Should get the price for index asset type and chainlink asset type (price * mcap)", async function () {
+
+    let parameters = encoder.encode(
+        ["address","uint256","uint256"],
+        [mocksupply.address,0, 60*60*24*7]
+    )
+
+
+    const tx = await conjureFactory.ConjureMint(
+        [[0],[0],[100],[8]],
+        [parameters],
+        ["chainlink call"],
+        [[mock.address],[mocksupply.address]],
+        [[1,2], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        false
+    );
+
+    const {events} = await tx.wait();
+    const [event] = events.filter(e => e.event === "NewConjure");
+    conjure = await ethers.getContractAt("Conjure", event.args.conjure);
+    ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
+
+    let lastprice = await conjure.getLatestPrice()
+
+    const diff = calcRelativeDiff(lastprice, "1500000000000000000000000000")
+    expect(diff).to.be.lessThan(errorDelta);
+  });
+
   it("Should get the price for sqrt index asset type sqrt(price * mcap)", async function () {
 
     let parameters = encoder.encode(
@@ -163,7 +193,7 @@ describe("Conjure Pricing Uniswap Tests", function () {
         [[1],[0],[100],[18]],
         [parameters],
         ["computeAverageTokenPrice(address,uint256,uint256)"],
-        [mockunioracle.address],
+        [[mockunioracle.address],[mocksupply.address]],
         [[1,3], [100,"120000000000000000000"]],
         [owner.address,owner.address,mock.address],
         ["NAME", "SYMBOL"],
@@ -182,6 +212,36 @@ describe("Conjure Pricing Uniswap Tests", function () {
     expect(diff).to.be.lessThan(errorDelta);
   });
 
+  it("Should get the price for sqrt index asset type sqrt(price * mcap) and type chainlink", async function () {
+
+    let parameters = encoder.encode(
+        ["address","uint256","uint256"],
+        [mocksupply.address,0, 60*60*24*7]
+    )
+
+    const tx = await conjureFactory.ConjureMint(
+        [[0],[0],[100],[8]],
+        [parameters],
+        ["chainlink call"],
+        [[mock.address],[mocksupply.address]],
+        [[1,3], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        false
+    );
+
+    const {events} = await tx.wait();
+    const [event] = events.filter(e => e.event === "NewConjure");
+    conjure = await ethers.getContractAt("Conjure", event.args.conjure);
+    ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
+
+    let lastprice = await conjure.getLatestPrice()
+
+    // sqrt of 1500000000000000000000000000 = 38729833462074
+    const diff = calcRelativeDiff(lastprice, "38729833462074")
+    expect(diff).to.be.lessThan(errorDelta);
+  });
+
   it("Should get the price for index asset type (price * mcap) with index divisor set to 2", async function () {
 
     let parameters = encoder.encode(
@@ -193,7 +253,7 @@ describe("Conjure Pricing Uniswap Tests", function () {
         [[1],[0],[100],[18]],
         [parameters],
         ["computeAverageTokenPrice(address,uint256,uint256)"],
-        [mockunioracle.address],
+        [[mockunioracle.address],[mocksupply.address]],
         [[2,2], [100,"120000000000000000000"]],
         [owner.address,owner.address,mock.address],
         ["NAME", "SYMBOL"],
@@ -211,36 +271,9 @@ describe("Conjure Pricing Uniswap Tests", function () {
     expect(diff).to.be.lessThan(errorDelta);
   });
 
-  it("Should revert if index asset type and custom feed", async function () {
-    await expect(conjureFactory.ConjureMint(
-        [[2],[0],[100],[8]],
-        [0x00],
-        ["latestAnswer()"],
-        [mockinverse.address],
-        [[1,2], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
-        ["NAME", "SYMBOL"],
-        true
-    )).to.be.revertedWith("Index Asset Types not compatible with custom oracles")
-
-  });
-
-  it("Should revert if index asset type and chainlink feed", async function () {
-    await expect(conjureFactory.ConjureMint(
-        [[0],[0],[100],[8]],
-        [0x00],
-        ["latestAnswer()"],
-        [mockinverse.address],
-        [[1,2], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
-        ["NAME", "SYMBOL"],
-        true
-    )).to.be.revertedWith("Index Asset Types not compatible with chainlink")
-  });
-
   it("Should get the price for sqrt index asset type sqrt(price * mcap) and supply 0", async function () {
 
-    await mocksupply.setState(2)
+    await mocksupply.setState(3)
 
     let parameters = encoder.encode(
         ["address","uint256","uint256"],
@@ -251,7 +284,7 @@ describe("Conjure Pricing Uniswap Tests", function () {
         [[1],[0],[100],[18]],
         [parameters],
         ["computeAverageTokenPrice(address,uint256,uint256)"],
-        [mockunioracle.address],
+        [[mockunioracle.address],[mocksupply.address]],
         [[1,3], [100,"120000000000000000000"]],
         [owner.address,owner.address,mock.address],
         ["NAME", "SYMBOL"],
@@ -281,7 +314,7 @@ describe("Conjure Pricing Uniswap Tests", function () {
         [[1],[0],[100],[17]],
         [parameters],
         ["computeAverageTokenPrice(address,uint256,uint256)"],
-        [mockunioracle.address],
+        [[mockunioracle.address],[mocksupply.address]],
         [[2,2], [100,"120000000000000000000"]],
         [owner.address,owner.address,mock.address],
         ["NAME", "SYMBOL"],
@@ -297,5 +330,27 @@ describe("Conjure Pricing Uniswap Tests", function () {
 
     const diff = calcRelativeDiff(lastprice, "16000000000000000000000000")
     expect(diff).to.be.lessThan(errorDelta);
+  });
+
+  it("Should revert if the decimals of the token lookup is greater than 18", async function () {
+
+    await mocksupply.setState(2)
+
+    let parameters = encoder.encode(
+        ["address","uint256","uint256"],
+        [mocksupply.address,0, 60*60*24*7]
+    )
+
+    await expect(conjureFactory.ConjureMint(
+        [[1],[0],[100],[17]],
+        [parameters],
+        ["computeAverageTokenPrice(address,uint256,uint256)"],
+        [[mockunioracle.address],[mocksupply.address]],
+        [[2,2], [100,"120000000000000000000"]],
+        [owner.address,owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        false
+    )).to.be.revertedWith("Decimals too high");
+
   });
 });

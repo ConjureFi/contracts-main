@@ -2,12 +2,12 @@
 pragma solidity 0.7.6;
 pragma experimental ABIEncoderV2;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {SafeDecimalMath} from "./SafeDecimalMath.sol";
-
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
+import {IERC20} from "./interfaces/IERC20.sol";
 import "./interfaces/IConjure.sol";
 import "./interfaces/IConjureFactory.sol";
 

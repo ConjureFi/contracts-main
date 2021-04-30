@@ -4,7 +4,7 @@ const { ethers } = require("hardhat");
 const zeroaddress = "0x0000000000000000000000000000000000000000";
 
 // test suite for ConjureFactory
-describe("Conjure Tests", function () {
+describe("Conjure Factory Tests", function () {
 
   // variable to store the deployed smart contract
   let conjureImplementation;
@@ -57,7 +57,7 @@ describe("Conjure Tests", function () {
         [[0],[0],[100],[8]],
         [0x00],
         ["signature1"],
-        [mock.address],
+        [[mock.address],[zeroaddress]],
         [[1,1], [100,"150000000000000000000"]],
         [owner.address,owner.address,mock.address],
         ["TEST", "SYMBOL"],

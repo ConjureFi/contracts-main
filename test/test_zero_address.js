@@ -2,6 +2,7 @@
 const {expect} = require("chai");
 const {ethers} = require("hardhat");
 const hre = require("hardhat");
+const zeroaddress = "0x0000000000000000000000000000000000000000";
 
 // test suite for Conjure Factory
 describe("Test Setup", function () {
@@ -60,7 +61,7 @@ describe("Test Setup", function () {
     })
 
 
-    describe('ConjureMint()', async () => {
+    describe('Test Zero Address()', async () => {
         let conjure, ethercollateral;
         it('Should show the deployed conjure contracts gas consumption', async () => {
 
@@ -68,7 +69,7 @@ describe("Test Setup", function () {
                 [[0], [0], [100], [8]],
                 [0x00],
                 ["signature1"],
-                [mock.address],
+                [[mock.address],[zeroaddress]],
                 [[1, 1], [100, "150000000000000000000"]],
                 [owner.address, owner.address, mock.address],
                 ["TEST", "SYMBOL"],
@@ -101,7 +102,7 @@ describe("Test Setup", function () {
             await expect(conjure.connect(signer).init(
                 false,
                 [1,1],
-                [],
+                [[],[]],
                 [[],[],[],[]],
                 [],
                 []

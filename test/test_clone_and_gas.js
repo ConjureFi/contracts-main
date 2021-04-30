@@ -1,6 +1,7 @@
 // imports
 const {expect} = require("chai");
 const {ethers} = require("hardhat");
+const zeroaddress = "0x0000000000000000000000000000000000000000";
 
 // test suite for Conjure Factory
 describe("Test Conjure Factory Deploy Functions (Gas)", function () {
@@ -72,7 +73,7 @@ describe("Test Conjure Factory Deploy Functions (Gas)", function () {
                 [[0], [0], [100], [8]],
                 [0x00],
                 ["signature1"],
-                [mock.address],
+                [[mock.address],[zeroaddress]],
                 [[1, 1], [100, "150000000000000000000"]],
                 [owner.address, owner.address, mock.address],
                 ["TEST", "SYMBOL"],

@@ -37,7 +37,8 @@ contract ConjureFactory {
      *         oracle decimals array
      *  @param calldataarray thr calldata array for the oracle setup
      *  @param signatures_ the array containing the signatures if the oracles
-     *  @param oracleAddresses_ the addresses array of the oracles
+     *  @param oracleAddresses_ the addresses array of the oracles containing 2 addresses: 1. address to call,
+     *         2. address of the token for supply if needed can be empty
      *  @param divisorAssetTypeMintingFeeRatio array containing 2 arrays: 1. divisor + assetType, 2. mintingFee + cratio
      *  @param conjureAddresses containing the 3 conjure needed addresses: owner, indexedFinanceUniswapv2oracle_,
                ethusdchainlinkoracle_
@@ -51,7 +52,8 @@ contract ConjureFactory {
         uint256[][4] memory oracleTypesValuesWeightsDecimals,
         bytes[] memory calldataarray,
         string[] memory signatures_,
-        address[] memory oracleAddresses_,
+        // oracle address to call, token address for supply
+        address[][2] memory oracleAddresses_,
         // divisor, asset type // mintingFee_, cratio_
         uint256[2][2] memory divisorAssetTypeMintingFeeRatio,
         // owner, indexedFinanceUniswapv2oracle_, ethusdchainlinkoracle_
@@ -160,7 +162,7 @@ interface IConjure {
     function init(
         bool inverse_,
         uint256[2] memory divisorAssetType,
-        address[] memory oracleAddresses_,
+        address[][2] memory oracleAddresses_,
         uint256[][4] memory oracleTypesValuesWeightsDecimals,
         string[] memory signatures_,
         bytes[] memory calldata_
