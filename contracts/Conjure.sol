@@ -45,8 +45,8 @@ contract Conjure is IERC20, ReentrancyGuard {
     // the type of the arb asset (single asset, arb asset)
     // 0... single asset     (uses median price)
     // 1... basket asset     (uses weighted average price)
-    // 2... index asset      (uses ndx uniswap oracle to get supply and price and calculates supply * price / divisor)
-    // 3 .. sqrt index asset (uses ndx uniswap oracle to get supply and price and calculates sqrt(supply * price) / divisor)
+    // 2... index asset      (uses ndx uniSwap oracle to get supply and price and calculates supply * price / divisor)
+    // 3 .. sqrt index asset (uses ndx uniSwap oracle to get supply and price and calculates sqrt(supply * price) / divisor)
     uint256 public _assetType;
 
     // the address of the collateral contract factory
@@ -59,7 +59,7 @@ contract Conjure is IERC20, ReentrancyGuard {
     struct _oracleStruct {
         address oracleaddress;
         address tokenaddress;
-        // 0... chainlink, 1... uniswap twap, 2... custom
+        // 0... chainLink, 1... UniSwap T-wap, 2... custom
         uint256 oracleType;
         string signature;
         bytes calldatas;
@@ -73,9 +73,6 @@ contract Conjure is IERC20, ReentrancyGuard {
 
     // number of oracles
     uint256 public _numoracles;
-
-    // deployed indexed finance uniswap v2 oracle
-    address public _indexedFinanceUniswapV2Oracle;
 
     // the latest observed price
     uint256 internal _latestobservedprice;
@@ -101,13 +98,13 @@ contract Conjure is IERC20, ReentrancyGuard {
     // The number representing 1.0
     uint256 private constant UNIT = 10**18;
 
-    // chainlink aggregator decimals to give back
+    // chainLink aggregator decimals to give back
     uint256 private constant chainLinkReturnDecimals = 8;
 
-    // the eth usd price feed chainlink oracle address
-    //chainlink eth/usd mainnet: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
-    //chainlink eth/usd rinkeby: 0x8A753747A1Fa494EC906cE90E9f37563A8AF630e
-    address public ethusdchainlinkoracle;
+    // the eth usd price feed chainLink oracle address
+    //chainLink eth/usd mainnet: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
+    //chainLink eth/usd rinkeby: 0x8A753747A1Fa494EC906cE90E9f37563A8AF630e
+    address public ethUsdChainLinkOracle;
 
     // ========== EVENTS ==========
     event NewOwner(address newOwner);
@@ -133,28 +130,27 @@ contract Conjure is IERC20, ReentrancyGuard {
     /**
      * @dev initializes the clone implementation and the Conjure contract
      *
-     * @param namesymbol array holding the name and the symbol of the asset
-     * @param conjureAddresses array holding the owner, indexed uniswap oracle and ethusdchainlinkoracle address
-     * @param factoryaddress_ the address of the factory
+     * @param nameSymbol array holding the name and the symbol of the asset
+     * @param conjureAddresses array holding the owner, indexed UniSwap oracle and ethUsdChainLinkOracle address
+     * @param factoryAddress_ the address of the factory
      * @param collateralContract the EtherCollateral contract of the asset
     */
     function initialize(
-        string[2] memory namesymbol,
+        string[2] memory nameSymbol,
         address[] memory conjureAddresses,
-        address factoryaddress_,
+        address factoryAddress_,
         address collateralContract
     ) external
     {
         require(_factoryContract == address(0), "already initialized");
-        require(factoryaddress_ != address(0), "factory can not be null");
+        require(factoryAddress_ != address(0), "factory can not be null");
 
         _owner = payable(conjureAddresses[0]);
-        _name = namesymbol[0];
-        _symbol = namesymbol[1];
+        _name = nameSymbol[0];
+        _symbol = nameSymbol[1];
 
-        _indexedFinanceUniswapV2Oracle = conjureAddresses[1];
-        ethusdchainlinkoracle = conjureAddresses[2];
-        _factoryContract = factoryaddress_;
+        ethUsdChainLinkOracle = conjureAddresses[1];
+        _factoryContract = factoryAddress_;
 
         // mint new EtherCollateral contract
         _collateralContract = collateralContract;
@@ -169,7 +165,7 @@ contract Conjure is IERC20, ReentrancyGuard {
      *        2. address of the token for supply if needed
      * @param oracleTypesValuesWeightsDecimals array holding the oracle types,values,weights and decimals
      * @param signatures_ array holding the oracle signatures
-     * @param calldata_ array holding the oracle calldata
+     * @param callData_ array holding the oracle callData
     */
     function init(
         bool inverse_,
@@ -177,7 +173,7 @@ contract Conjure is IERC20, ReentrancyGuard {
         address[][2] memory oracleAddresses_,
         uint256[][4] memory oracleTypesValuesWeightsDecimals,
         string[] memory signatures_,
-        bytes[] memory calldata_
+        bytes[] memory callData_
     ) external {
         require(msg.sender == _factoryContract, "can only be called by factory contract");
         require(_inited == false, "Contract already inited");
@@ -188,7 +184,7 @@ contract Conjure is IERC20, ReentrancyGuard {
         _indexdivisor = divisorAssetType[0];
         _inverse = inverse_;
 
-        uint256 weightcheck;
+        uint256 weightCheck;
 
         // push the values into the oracle struct for further processing
         for (uint i = 0; i < oracleAddresses_[0].length; i++) {
@@ -198,18 +194,18 @@ contract Conjure is IERC20, ReentrancyGuard {
                 tokenaddress: oracleAddresses_[1][i],
                 oracleType: oracleTypesValuesWeightsDecimals[0][i],
                 signature: signatures_[i],
-                calldatas: calldata_[i],
+                calldatas: callData_[i],
                 weight: oracleTypesValuesWeightsDecimals[2][i],
                 values: oracleTypesValuesWeightsDecimals[1][i],
                 decimals: oracleTypesValuesWeightsDecimals[3][i]
             }));
 
-            weightcheck += oracleTypesValuesWeightsDecimals[2][i];
+            weightCheck += oracleTypesValuesWeightsDecimals[2][i];
         }
 
         // for basket assets weights must add up to 100
         if (_assetType == 1) {
-            require(weightcheck == 100, "Weights not 100");
+            require(weightCheck == 100, "Weights not 100");
         }
 
         updatePrice();
@@ -286,7 +282,7 @@ contract Conjure is IERC20, ReentrancyGuard {
 
     /**
      * @dev gets the latest price of an oracle asset
-     * uses chainlink oralces to get the price
+     * uses chainLink oracles to get the price
      *
      * @return the current asset price
     */
@@ -312,7 +308,7 @@ contract Conjure is IERC20, ReentrancyGuard {
         int price,
         ,
         ,
-        ) = AggregatorV3Interface(ethusdchainlinkoracle).latestRoundData();
+        ) = AggregatorV3Interface(ethUsdChainLinkOracle).latestRoundData();
 
         return uint(price) * 10 ** (_maximumDecimals - chainLinkReturnDecimals);
     }
@@ -459,10 +455,10 @@ contract Conjure is IERC20, ReentrancyGuard {
 
         for (uint i = 0; i < _oracleData.length; i++) {
 
-            // chainlink oracle
+            // chainLink oracle
             if (_oracleData[i].oracleType == 0) {
-                AggregatorV3Interface pricefeed = AggregatorV3Interface(_oracleData[i].oracleaddress);
-                prices[i] = getLatestPrice(pricefeed);
+                AggregatorV3Interface priceFeed = AggregatorV3Interface(_oracleData[i].oracleaddress);
+                prices[i] = getLatestPrice(priceFeed);
 
                 // norming price
                 if (_maximumDecimals != _oracleData[i].decimals) {
@@ -470,23 +466,23 @@ contract Conjure is IERC20, ReentrancyGuard {
                 }
             }
 
-            // custom oracle and uniswap
+            // custom oracle and UniSwap
             else {
                 string memory signature = _oracleData[i].signature;
-                bytes memory calldatas = _oracleData[i].calldatas;
+                bytes memory callDatas = _oracleData[i].calldatas;
 
                 bytes memory callData;
 
                 if (bytes(signature).length == 0) {
-                    callData = calldatas;
+                    callData = callDatas;
                 } else {
-                    callData = abi.encodePacked(bytes4(keccak256(bytes(signature))), calldatas);
+                    callData = abi.encodePacked(bytes4(keccak256(bytes(signature))), callDatas);
                 }
 
                 (bool success, bytes memory data) = _oracleData[i].oracleaddress.call{value:_oracleData[i].values}(callData);
                 require(success, "Call unsuccessful");
 
-                // uniswap V2 use NDX Custom Oracle call
+                // UniSwap V2 use NDX Custom Oracle call
                 if (_oracleData[i].oracleType == 1) {
                     FixedPoint.uq112x112 memory price = abi.decode(data, (FixedPoint.uq112x112));
 
@@ -506,25 +502,25 @@ contract Conjure is IERC20, ReentrancyGuard {
             // for market cap and sqrt market cap asset types
             if (_assetType == 2 || _assetType == 3) {
                 // get total supply for indexes
-                uint totalsupply = IERC20(_oracleData[i].tokenaddress).totalSupply();
-                uint tokendecimals = IERC20(_oracleData[i].tokenaddress).decimals();
+                uint tokenTotalSupply = IERC20(_oracleData[i].tokenaddress).totalSupply();
+                uint tokenDecimals = IERC20(_oracleData[i].tokenaddress).decimals();
 
                 // norm total supply
-                if (_maximumDecimals != tokendecimals) {
-                    require(tokendecimals <= 18, "Decimals too high");
-                    totalsupply = totalsupply * 10 ** (_maximumDecimals - tokendecimals);
+                if (_maximumDecimals != tokenDecimals) {
+                    require(tokenDecimals <= 18, "Decimals too high");
+                    tokenTotalSupply = tokenTotalSupply * 10 ** (_maximumDecimals - tokenDecimals);
                 }
 
-                // index use mcap
+                // index use market cap
                 if (_assetType == 2) {
-                    prices[i] = (prices[i].mul(totalsupply) / UNIT);
+                    prices[i] = (prices[i].mul(tokenTotalSupply) / UNIT);
                 }
 
-                // sqrt mcap
+                // sqrt market cap
                 if (_assetType == 3) {
-                    // mcap
-                    prices[i] =prices[i].mul(totalsupply) / UNIT;
-                    // sqrt mcap
+                    // market cap
+                    prices[i] =prices[i].mul(tokenTotalSupply) / UNIT;
+                    // sqrt market cap
                     prices[i] = sqrt(prices[i]);
                 }
             }
@@ -548,16 +544,16 @@ contract Conjure is IERC20, ReentrancyGuard {
             // take average of the 2 most inner numbers
             } else {
                 uint size1 = (sorted.length) / 2;
-                uint[] memory sortedmin = new uint[](2);
+                uint[] memory sortedMin = new uint[](2);
 
-                sortedmin[0] = sorted[size1-1];
-                sortedmin[1] = sorted[size1];
+                sortedMin[0] = sorted[size1-1];
+                sortedMin[1] = sorted[size1];
 
-                return getAverage(sortedmin);
+                return getAverage(sortedMin);
             }
         }
 
-        // else return avarage for arb assets
+        // else return average for arb assets
         return getAverage(sorted);
     }
 
@@ -661,7 +657,7 @@ contract Conjure is IERC20, ReentrancyGuard {
      * required by the EIP. See the note at the beginning of {ERC20};
      *
      * Requirements:
-     * - `sender` and `recipient` cannot be the zero ress.
+     * - `sender` and `recipient` cannot be the zero address.
      * - `sender` must have a balance of at least `amount`.
      * - the caller must have allowance for ``sender``'s tokens of at least
      * `amount`.

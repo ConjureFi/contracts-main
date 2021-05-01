@@ -80,7 +80,7 @@ describe("Conjure Pricing Core Tests", function () {
         [""],
         [[mock.address],[zeroaddress]],
         [[1,0], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     )).to.be.revertedWith("Call unsuccessful");
@@ -93,7 +93,7 @@ describe("Conjure Pricing Core Tests", function () {
         ["signature1"],
         [[mock.address],[zeroaddress]],
         [[1,0], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -114,7 +114,7 @@ describe("Conjure Pricing Core Tests", function () {
         ["latestAnswer()", "latestAnswer()", "latestAnswer()"],
         [[mock.address, mock2000.address, mock3000.address],[zeroaddress, zeroaddress, zeroaddress]],
         [[1,0], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -137,7 +137,7 @@ describe("Conjure Pricing Core Tests", function () {
         ["latestAnswer()", "latestAnswer()"],
         [[mock.address, mock2000.address],[zeroaddress,zeroaddress]],
         [[1,0], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -160,7 +160,7 @@ describe("Conjure Pricing Core Tests", function () {
         ["latestAnswer()", "latestAnswer()"],
         [[mock18dec.address, mock18dec.address],[zeroaddress,zeroaddress]],
         [[1,0], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -183,7 +183,7 @@ describe("Conjure Pricing Core Tests", function () {
         ["latestAnswer()", "latestAnswer()", "latestAnswer()"],
         [[mock2000.address, mock3000.address , mock18dec.address],[zeroaddress,zeroaddress,zeroaddress]],
         [[1,0], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -207,7 +207,7 @@ describe("Conjure Pricing Core Tests", function () {
         [[mock2000.address, mock3000.address , mock18dec.address, mock2000.address],
         [zeroaddress,zeroaddress,zeroaddress,zeroaddress]],
         [[1,0], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -230,7 +230,7 @@ describe("Conjure Pricing Core Tests", function () {
         ["latestAnswer()"],
         [[mock3000.address],[zeroaddress]],
         [[1,1], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -254,7 +254,7 @@ describe("Conjure Pricing Core Tests", function () {
         [[mock.address, mock2000.address, mock3000.address],
         [zeroaddress,zeroaddress,zeroaddress]],
         [[1,1], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     )).to.be.revertedWith("Weights not 100")
@@ -269,7 +269,7 @@ describe("Conjure Pricing Core Tests", function () {
         [[mock.address, mock2000.address, mock3000.address],
         [zeroaddress,zeroaddress,zeroaddress]],
         [[1,1], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     )).to.be.revertedWith("Call unsuccessful")
@@ -283,7 +283,7 @@ describe("Conjure Pricing Core Tests", function () {
         [],
         [[],[]],
         [[1,0], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     )).to.be.revertedWith("No oracle feeds supplied")
@@ -298,7 +298,7 @@ describe("Conjure Pricing Core Tests", function () {
         [[mock.address, mock2000.address, mock3000.address],
         [zeroaddress,zeroaddress,zeroaddress]],
         [[1,1], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -322,7 +322,7 @@ describe("Conjure Pricing Core Tests", function () {
         [[mock2000.address, mock.address, mock3000.address],
         [zeroaddress,zeroaddress,zeroaddress]],
         [[1,1], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -346,7 +346,7 @@ describe("Conjure Pricing Core Tests", function () {
         [[mock3000.address, mock.address, mock2000.address],
         [zeroaddress,zeroaddress,zeroaddress]],
         [[1,1], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -369,7 +369,7 @@ describe("Conjure Pricing Core Tests", function () {
         ["latestAnswer()"],
         [[mockinverse.address],[zeroaddress]],
         [[1,1], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         true
     );
@@ -406,7 +406,7 @@ describe("Conjure Pricing Core Tests", function () {
         ["latestAnswer()"],
         [[mockinverse.address],[zeroaddress]],
         [[1,1], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         true
     );
@@ -443,7 +443,7 @@ describe("Conjure Pricing Core Tests", function () {
         ["latestAnswer()"],
         [[mockinverse.address],[zeroaddress]],
         [[1,1], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         true
     );

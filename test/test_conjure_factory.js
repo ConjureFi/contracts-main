@@ -59,7 +59,7 @@ describe("Conjure Factory Tests", function () {
         ["signature1"],
         [[mock.address],[zeroaddress]],
         [[1,1], [100,"150000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["TEST", "SYMBOL"],
         0
     );

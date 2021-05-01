@@ -8,7 +8,7 @@ interface IConjure {
     /**
      * @dev lets the EtherCollateral contract instance burn synths
      *
-     * @param account the account address where the synths should be burned to
+     * @param account the account address where the synths should be burned
      * @param amount the amount to be burned
     */
     function burn(address account, uint amount) external;

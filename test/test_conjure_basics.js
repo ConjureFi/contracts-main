@@ -71,7 +71,7 @@ describe("Conjure Basic Tests", function () {
         ["signature1"],
         [[mock.address],[zeroaddress]],
         [[1,1], [100,"150000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address, mock.address],
         ["NAME", "SYMBOL"],
         0
     );
@@ -153,7 +153,7 @@ describe("Conjure Basic Tests", function () {
         ["signature1"],
         [[mock.address],[zeroaddress]],
         [[1,1], [100,"150000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         0
     )).to.be.reverted;
@@ -166,7 +166,7 @@ describe("Conjure Basic Tests", function () {
         ["signature1"],
         [[mock.address],[zeroaddress]],
         [[0,1], [100,"150000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         0
     )).to.be.revertedWith("Divisor should not be 0");
@@ -179,7 +179,7 @@ describe("Conjure Basic Tests", function () {
         ["signature1"],
         [[mock.address],[zeroaddress]],
         [[1,1], [100,"110000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         0
     )).to.be.revertedWith("C-Ratio Too low");
@@ -192,7 +192,7 @@ describe("Conjure Basic Tests", function () {
         ["signature1"],
         [[mock.address],[zeroaddress]],
         [[1,1], [100,"1000000000000000000001"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         0
     )).to.be.revertedWith("C-Ratio Too high");
@@ -205,7 +205,7 @@ describe("Conjure Basic Tests", function () {
         ["signature1"],
         [[mock.address],[zeroaddress]],
         [[1,1], [100,"150000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         0
     );
@@ -262,7 +262,7 @@ describe("Conjure Basic Tests", function () {
         ["signature1"],
         [[mock.address],[zeroaddress]],
         [[1,1], [100,"1000000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         0
     )).to.be.revertedWith("Decimals too high");

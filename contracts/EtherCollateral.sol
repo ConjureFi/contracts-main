@@ -134,19 +134,19 @@ contract EtherCollateral is ReentrancyGuard {
      *
      * @param _asset the asset with which the EtherCollateral contract is linked
      * @param _owner the owner of the asset
-     * @param _factoryaddress the address of the conjure factory for later fee sending
+     * @param _factoryAddress the address of the conjure factory for later fee sending
      * @param _mintingFeeRatio array which holds the minting fee and the c-ratio
     */
     function initialize(
         address payable _asset,
         address _owner,
-        address _factoryaddress,
+        address _factoryAddress,
         uint256[2] memory _mintingFeeRatio
     )
     external
     {
         require(_factoryContract == address(0), "already initialized");
-        require(_factoryaddress != address(0), "factory can not be null");
+        require(_factoryAddress != address(0), "factory can not be null");
         // c-ratio greater 100 and less or equal 1000
         require(_mintingFeeRatio[1] <= ONE_THOUSAND, "C-Ratio Too high");
         require(_mintingFeeRatio[1] > ONE_HUNDRED_TEN, "C-Ratio Too low");
@@ -154,7 +154,7 @@ contract EtherCollateral is ReentrancyGuard {
         arbasset = _asset;
         owner = _owner;
         setIssueFeeRateInternal(_mintingFeeRatio[0]);
-        _factoryContract = _factoryaddress;
+        _factoryContract = _factoryAddress;
         collateralizationRatio = _mintingFeeRatio[1];
         liquidationRatio = _mintingFeeRatio[1] / 100;
     }
@@ -215,7 +215,7 @@ contract EtherCollateral is ReentrancyGuard {
      * @return _issuanceRatio the percentage of 100/ C-ratio e.g. 100/150 = 0.6666666667
      * @return _issueFeeRate the minting fee for a new loan
      * @return _minLoanCollateralSize the minimum loan collateral value
-     * @return _totalIssuedSynths the total of all isued synths
+     * @return _totalIssuedSynths the total of all issued synths
      * @return _totalLoansCreated the total of all loans created
      * @return _totalOpenLoanCount the total of open loans
      * @return _ethBalance the current balance of the contract
@@ -304,7 +304,7 @@ contract EtherCollateral is ReentrancyGuard {
      * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
      *
      * If the C-Ratio is greater than Liquidation Ratio + Penalty in % then the C-Ratio can be fixed
-     * otherwise a greater number is returned and the debttoCover from the calling function is used
+     * otherwise a greater number is returned and the debtToCover from the calling function is used
      *
      * @param debtBalance the amount of the loan or debt to calculate in USD
      * @param collateral the amount of the collateral in USD
@@ -451,9 +451,9 @@ contract EtherCollateral is ReentrancyGuard {
         // Issuance ratio caps collateral to loan value at 120%
         require(_loanAmount <= maxLoanAmount, "Loan amount exceeds max borrowing power");
 
-        uint256 ethforloan = collateralAmountForLoan(_loanAmount);
+        uint256 ethForLoan = collateralAmountForLoan(_loanAmount);
         uint256 mintingFee = _calculateMintingFee(msg.value);
-        require(msg.value >= ethforloan + mintingFee, "Not enough funds sent to cover fee and collateral");
+        require(msg.value >= ethForLoan + mintingFee, "Not enough funds sent to cover fee and collateral");
 
         // Get a Loan ID
         loanID = _incrementTotalLoansCounter();
@@ -481,10 +481,10 @@ contract EtherCollateral is ReentrancyGuard {
         // Fee distribution. Mint the fees into the FeePool and record fees paid
         if (mintingFee > 0) {
             // calculate back factory owner fee is 0.25 on top of creator fee
-            address payable factoryowner = IConjureFactory(_factoryContract).getConjureRouter();
+            address payable factoryOwner = IConjureFactory(_factoryContract).getConjureRouter();
             uint256 feeToSend = mintingFee / 4;
 
-            factoryowner.transfer(feeToSend);
+            factoryOwner.transfer(feeToSend);
             arbasset.transfer(mintingFee.sub(feeToSend));
         }
 
@@ -619,8 +619,8 @@ contract EtherCollateral is ReentrancyGuard {
 
         // get prices
         syntharb().updatePrice();
-        uint currentprice = syntharb().getLatestPrice();
-        uint currentethusdprice = syntharb().getLatestETHUSDPrice();
+        uint currentPrice = syntharb().getLatestPrice();
+        uint currentEthUsdPrice = syntharb().getLatestETHUSDPrice();
 
         require(collateralRatio < liquidationRatio, "Collateral ratio above liquidation ratio");
 
@@ -628,12 +628,12 @@ contract EtherCollateral is ReentrancyGuard {
         // multiply the loan amount times current price in usd
         // collateralValue is already in usd nomination
         uint256 liquidationAmountUSD = calculateAmountToLiquidate(
-            synthLoan.loanAmount.multiplyDecimal(currentprice),
+            synthLoan.loanAmount.multiplyDecimal(currentPrice),
             collateralValue
         );
 
         // calculate back the synth amount from the usd nomination
-        uint256 liquidationAmount = liquidationAmountUSD.divideDecimal(currentprice);
+        uint256 liquidationAmount = liquidationAmountUSD.divideDecimal(currentPrice);
 
         // cap debt to liquidate
         uint256 amountToLiquidate = liquidationAmount < _debtToCover ? liquidationAmount : _debtToCover;
@@ -645,7 +645,7 @@ contract EtherCollateral is ReentrancyGuard {
         totalIssuedSynths = totalIssuedSynths.sub(amountToLiquidate);
 
         // Collateral value to redeem in ETH
-        uint256 collateralRedeemed = amountToLiquidate.multiplyDecimal(currentprice).divideDecimal(currentethusdprice);
+        uint256 collateralRedeemed = amountToLiquidate.multiplyDecimal(currentPrice).divideDecimal(currentEthUsdPrice);
 
         // Add penalty in ETH
         uint256 totalCollateralLiquidated = collateralRedeemed.multiplyDecimal(

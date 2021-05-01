@@ -106,7 +106,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
         ["computeAverageTokenPrice(address,uint256,uint256)"],
         [[mockunioracle.address], [mocksupply.address]],
         [[1,0], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -136,7 +136,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
         ["computeAverageTokenPrice(address,uint256,uint256)"],
         [[mockunioracle.address],[mocksupply.address]],
         [[1,2], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -166,7 +166,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
         ["chainlink call"],
         [[mock.address],[mocksupply.address]],
         [[1,2], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -195,7 +195,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
         ["computeAverageTokenPrice(address,uint256,uint256)"],
         [[mockunioracle.address],[mocksupply.address]],
         [[1,3], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -225,7 +225,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
         ["chainlink call"],
         [[mock.address],[mocksupply.address]],
         [[1,3], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -255,7 +255,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
         ["computeAverageTokenPrice(address,uint256,uint256)"],
         [[mockunioracle.address],[mocksupply.address]],
         [[2,2], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -286,7 +286,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
         ["computeAverageTokenPrice(address,uint256,uint256)"],
         [[mockunioracle.address],[mocksupply.address]],
         [[1,3], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -316,7 +316,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
         ["computeAverageTokenPrice(address,uint256,uint256)"],
         [[mockunioracle.address],[mocksupply.address]],
         [[2,2], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -347,7 +347,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
         ["computeAverageTokenPrice(address,uint256,uint256)"],
         [[mockunioracle.address],[mocksupply.address]],
         [[2,2], [100,"120000000000000000000"]],
-        [owner.address,owner.address,mock.address],
+        [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         false
     )).to.be.revertedWith("Decimals too high");

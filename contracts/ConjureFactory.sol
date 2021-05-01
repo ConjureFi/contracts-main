@@ -35,31 +35,30 @@ contract ConjureFactory {
      *
      *  @param oracleTypesValuesWeightsDecimals array containing the oracle type, oracle value, oracle weight,
      *         oracle decimals array
-     *  @param calldataarray thr calldata array for the oracle setup
+     *  @param callDataArray thr callData array for the oracle setup
      *  @param signatures_ the array containing the signatures if the oracles
      *  @param oracleAddresses_ the addresses array of the oracles containing 2 addresses: 1. address to call,
      *         2. address of the token for supply if needed
-     *  @param divisorAssetTypeMintingFeeRatio array containing 2 arrays: 1. divisor + assetType, 2. mintingFee + cratio
-     *  @param conjureAddresses containing the 3 conjure needed addresses: owner, indexedFinanceUniswapv2oracle_,
-               ethusdchainlinkoracle_
-     *  @param namesymbol array containing the name and the symbol of the asset
+     *  @param divisorAssetTypeMintingFeeRatio array containing 2 arrays: 1. divisor + assetType, 2. mintingFee + CRatio
+     *  @param conjureAddresses containing the 2 conjure needed addresses: owner, ethUsdChainLinkOracle
+     *  @param nameSymbol array containing the name and the symbol of the asset
      *  @param inverse indicator if this an inverse asset
      *  @return conjure the conjure contract address
-     *  @return etherCollateral the ethercollateral address
+     *  @return etherCollateral the EtherCollateral address
     */
     function ConjureMint(
         // oracle type, oracle value, oracle weight, oracle decimals array
         uint256[][4] memory oracleTypesValuesWeightsDecimals,
-        bytes[] memory calldataarray,
+        bytes[] memory callDataArray,
         string[] memory signatures_,
         // oracle address to call, token address for supply
         address[][2] memory oracleAddresses_,
-        // divisor, asset type // mintingFee_, cratio_
+        // divisor, asset type // mintingFee, CRatio
         uint256[2][2] memory divisorAssetTypeMintingFeeRatio,
-        // owner, indexedFinanceUniswapv2oracle_, ethusdchainlinkoracle_
+        // owner, ethUsdChainLinkOracle
         address[] memory conjureAddresses,
         // name, symbol
-        string[2] memory namesymbol,
+        string[2] memory nameSymbol,
         // inverse asset indicator
         bool inverse
     )
@@ -70,7 +69,7 @@ contract ConjureFactory {
         etherCollateral = etherCollateralImplementation.createClone();
 
         IConjure(conjure).initialize(
-            namesymbol,
+            nameSymbol,
             conjureAddresses,
             address(this),
             etherCollateral
@@ -89,7 +88,7 @@ contract ConjureFactory {
             oracleAddresses_,
             oracleTypesValuesWeightsDecimals,
             signatures_,
-            calldataarray
+            callDataArray
         );
 
         emit NewConjure(conjure, etherCollateral);
@@ -120,7 +119,7 @@ contract ConjureFactory {
     }
 
     /**
-     * @dev lets the owner change the current ethercollateral implementation
+     * @dev lets the owner change the current EtherCollateral implementation
      *
      * @param etherCollateralImplementation_ the address of the new implementation
     */
@@ -153,9 +152,9 @@ contract ConjureFactory {
 
 interface IConjure {
     function initialize(
-        string[2] memory namesymbol,
+        string[2] memory nameSymbol,
         address[] memory conjureAddresses,
-        address factoryaddress_,
+        address factoryAddress_,
         address collateralContract
     ) external;
 
@@ -165,7 +164,7 @@ interface IConjure {
         address[][2] memory oracleAddresses_,
         uint256[][4] memory oracleTypesValuesWeightsDecimals,
         string[] memory signatures_,
-        bytes[] memory calldata_
+        bytes[] memory callData_
     ) external;
 }
 
@@ -173,7 +172,7 @@ interface IEtherCollateral {
     function initialize(
         address payable _asset,
         address _owner,
-        address _factoryaddress,
+        address _factoryAddress,
         uint256[2] memory _mintingFeeRatio
     )
     external;

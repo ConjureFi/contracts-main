@@ -140,7 +140,7 @@ describe("EtherCollateral Liquidations Tests", function () {
         ["latestAnswer()"],
         [[mockliquidation.address],[zeroaddress]],
         [[1, 0], [100, "120000000000000000000"]],
-        [owner.address, owner.address, mock.address],
+        [owner.address, mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -257,7 +257,7 @@ describe("EtherCollateral Liquidations Tests", function () {
         ["latestAnswer()"],
         [[mockliquidation.address],[zeroaddress]],
         [[1, 0], [100, "120000000000000000000"]],
-        [owner.address, owner.address, mock.address],
+        [owner.address, mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -374,7 +374,7 @@ describe("EtherCollateral Liquidations Tests", function () {
         ["latestAnswer()"],
         [[mockliquidation.address],[zeroaddress]],
         [[1, 0], [100, "120000000000000000000"]],
-        [owner.address, owner.address, mock.address],
+        [owner.address, mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -491,7 +491,7 @@ describe("EtherCollateral Liquidations Tests", function () {
         ["latestAnswer()"],
         [[mockliquidation.address],[zeroaddress]],
         [[1, 0], [100, "120000000000000000000"]],
-        [owner.address, owner.address, mock.address],
+        [owner.address, mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -532,7 +532,7 @@ describe("EtherCollateral Liquidations Tests", function () {
         ["latestAnswer()"],
         [[mockliquidation.address],[zeroaddress]],
         [[1, 0], [100, "120000000000000000000"]],
-        [owner.address, owner.address, mock.address],
+        [owner.address, mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -576,7 +576,7 @@ describe("EtherCollateral Liquidations Tests", function () {
         ["latestAnswer()"],
         [[mockliquidation.address],[zeroaddress]],
         [[1, 0], [100, "120000000000000000000"]],
-        [owner.address, owner.address, mock.address],
+        [owner.address, mock.address],
         ["NAME", "SYMBOL"],
         false
     );
@@ -684,7 +684,7 @@ describe("EtherCollateral Liquidations Tests", function () {
         ["latestAnswer()"],
         [[mockliquidation.address],[zeroaddress]],
         [[1, 0], [100, "120000000000000000000"]],
-        [owner.address, owner.address, mock.address],
+        [owner.address, mock.address],
         ["NAME", "SYMBOL"],
         false
     );
