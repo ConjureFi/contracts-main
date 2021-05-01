@@ -67,6 +67,8 @@ describe("EtherCollateral Liquidations Tests", function () {
   let mockinverse;
   let mock18dec;
   let mockliquidation;
+  let pool;
+  let router;
 
   let conjure;
   let ethercollateral;
@@ -95,13 +97,27 @@ describe("EtherCollateral Liquidations Tests", function () {
     etherCollateralImplementation = await COLLATERAL.deploy();
     await etherCollateralImplementation.deployed();
 
+    // deploy staking pool
+    const POOL = await ethers.getContractFactory("StakingRewards");
+
+    pool = await POOL.deploy(owner.address, owner.address, zeroaddress);
+    await pool.deployed();
+
+    // deploy router
+    const ROUTER = await ethers.getContractFactory("ConjureRouter");
+
+    router = await ROUTER.deploy(pool.address, owner.address);
+    await router.deployed();
+
+    // set rewards distribution
+    await pool.setRewardsDistribution(router.address)
+
     // deploy conjure factory
     conjureFactory = await deploy(
         'ConjureFactory',
         conjureImplementation.address,
         etherCollateralImplementation.address,
-        //use as router
-        addr4.address
+        router.address
     );
 
     // deploy oracle mock

@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import "./interfaces/IConjure.sol";
 import "./interfaces/IConjureFactory.sol";
+import "./interfaces/IConjureRouter.sol";
 
 /// @author Conjure Finance Team
 /// @title EtherCollateral
@@ -484,7 +485,7 @@ contract EtherCollateral is ReentrancyGuard {
             address payable conjureRouter = IConjureFactory(_factoryContract).getConjureRouter();
             uint256 feeToSend = mintingFee / 4;
 
-            conjureRouter.transfer(feeToSend);
+            IConjureRouter(conjureRouter).deposit{value:feeToSend}();
             arbasset.transfer(mintingFee.sub(feeToSend));
         }
 

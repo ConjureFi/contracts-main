@@ -24,6 +24,8 @@ describe("EtherCollateral Tests", function () {
     let mock3000;
     let mockinverse;
     let mock18dec;
+    let pool;
+    let router;
 
     let conjure;
     let ethercollateral;
@@ -52,13 +54,27 @@ describe("EtherCollateral Tests", function () {
         etherCollateralImplementation = await COLLATERAL.deploy();
         await etherCollateralImplementation.deployed();
 
+        // deploy staking pool
+        const POOL = await ethers.getContractFactory("StakingRewards");
+
+        pool = await POOL.deploy(owner.address, owner.address, zeroaddress);
+        await pool.deployed();
+
+        // deploy router
+        const ROUTER = await ethers.getContractFactory("ConjureRouter");
+
+        router = await ROUTER.deploy(pool.address, owner.address);
+        await router.deployed();
+
+        // set rewards distribution
+        await pool.setRewardsDistribution(router.address)
+
         // deploy conjure factory
         conjureFactory = await deploy(
             'ConjureFactory',
             conjureImplementation.address,
             etherCollateralImplementation.address,
-            //use as router
-            addr4.address
+            router.address
         );
 
         // deploy oracle mock
@@ -394,13 +410,13 @@ describe("EtherCollateral Tests", function () {
         };
 
         let contractBalanceBefore = await provider.getBalance(conjure.address);
-        let routerBalanceBefore = await provider.getBalance(addr4.address);
+        let routerBalanceBefore = await provider.getBalance(router.address);
 
         // should get loan for 1 asset
         await ethercollateral.openLoan(amountToBorrow, overrides);
 
         let contractBalanceAfter = await provider.getBalance(conjure.address);
-        let routerBalanceAfter = await provider.getBalance(addr4.address);
+        let routerBalanceAfter = await provider.getBalance(router.address);
 
         const routerfee = ethvalue.mul("100").div("10100").div("4")
         const expectrouter = routerBalanceBefore.add(routerfee)

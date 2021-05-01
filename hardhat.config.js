@@ -24,10 +24,18 @@ module.exports = {
         version: "0.7.6",
         settings: { }
       },
-	        {
-        version: "0.6.5",
-        settings: { }
-      }
+        {
+            version: "0.6.5",
+            settings: { }
+        },
+        {
+            version: "0.5.16",
+            settings: { }
+        },
+        {
+            version: "0.6.11",
+            settings: { }
+        },
     ]
   }
 };
