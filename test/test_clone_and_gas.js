@@ -69,7 +69,7 @@ describe("Test Conjure Factory Deploy Functions (Gas)", function () {
     describe('ConjureMint()', async () => {
         let conjure, ethercollateral;
         it('Should show the deployed conjure contracts gas consumption', async () => {
-            const tx = await conjureFactory.ConjureMint(
+            const tx = await conjureFactory.conjureMint(
                 [[0], [0], [100], [8]],
                 [0x00],
                 ["signature1"],

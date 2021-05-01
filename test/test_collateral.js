@@ -100,7 +100,7 @@ describe("EtherCollateral Tests", function () {
     })
 
     it("Should init the contract", async function () {
-        const tx = await conjureFactory.ConjureMint(
+        const tx = await conjureFactory.conjureMint(
             [[0], [0], [100], [8]],
             [0x00],
             ["signature1"],
@@ -383,7 +383,7 @@ describe("EtherCollateral Tests", function () {
     });
 
     it("Should be able to distribute the minting fee", async function () {
-        const tx = await conjureFactory.ConjureMint(
+        const tx = await conjureFactory.conjureMint(
             [[0], [0], [100], [8]],
             [0x00],
             ["signature1"],
@@ -426,7 +426,7 @@ describe("EtherCollateral Tests", function () {
     });
 
     it("Should be reverted cause setup with too high minting fee", async function () {
-        await expect(conjureFactory.ConjureMint(
+        await expect(conjureFactory.conjureMint(
             [[0], [0], [100], [8]],
             [0x00],
             ["signature1"],
@@ -479,7 +479,7 @@ describe("EtherCollateral Tests", function () {
     });
 
     it("Should not be able to repay a loan with not enough funds", async function () {
-        const tx = await conjureFactory.ConjureMint(
+        const tx = await conjureFactory.conjureMint(
             [[0], [0], [100], [8]],
             [0x00],
             ["signature1"],
@@ -512,7 +512,7 @@ describe("EtherCollateral Tests", function () {
     });
 
     it("Should not be able to have more than 50 loans in the system per user", async function () {
-        const tx = await conjureFactory.ConjureMint(
+        const tx = await conjureFactory.conjureMint(
             [[0], [0], [100], [8]],
             [0x00],
             ["signature1"],
@@ -543,7 +543,7 @@ describe("EtherCollateral Tests", function () {
     });
 
     it("Basic ERC20 Tests for Conjure asset", async function () {
-        const tx = await conjureFactory.ConjureMint(
+        const tx = await conjureFactory.conjureMint(
             [[0], [0], [100], [8]],
             [0x00],
             ["signature1"],
@@ -599,7 +599,7 @@ describe("EtherCollateral Tests", function () {
     });
 
     it("Should be able to change the owner", async function () {
-        const tx = await conjureFactory.ConjureMint(
+        const tx = await conjureFactory.conjureMint(
             [[0], [0], [100], [8]],
             [0x00],
             ["signature1"],

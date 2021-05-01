@@ -74,7 +74,7 @@ describe("Conjure Pricing Core Tests", function () {
   })
 
   it("Revert when call to non existing fallback function is initiated", async function () {
-    await expect(conjureFactory.ConjureMint(
+    await expect(conjureFactory.conjureMint(
         [[2],[0],[100],[8]],
         [0x00],
         [""],
@@ -87,7 +87,7 @@ describe("Conjure Pricing Core Tests", function () {
   });
 
   it("Should get the price median right for a single oracle", async function () {
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[0],[0],[100],[8]],
         [0x00],
         ["signature1"],
@@ -108,7 +108,7 @@ describe("Conjure Pricing Core Tests", function () {
   });
 
   it("Should get the price median right for a 3 oracles", async function () {
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[2,2,2],[0,0,0],[30,30,40],[8,8,8]],
         [0x00, 0x00, 0x00],
         ["latestAnswer()", "latestAnswer()", "latestAnswer()"],
@@ -131,7 +131,7 @@ describe("Conjure Pricing Core Tests", function () {
  });
 
   it("Should get the price median right for a 2 oracles", async function () {
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[2,2],[0,0],[30,30],[8,8]],
         [0x00, 0x00],
         ["latestAnswer()", "latestAnswer()"],
@@ -154,7 +154,7 @@ describe("Conjure Pricing Core Tests", function () {
   });
 
   it("Should get the price median right for a 2 oracles with maximum decimals (18)", async function () {
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[0,2],[0,0],[30,30],[18,18]],
         [0x00, 0x00],
         ["latestAnswer()", "latestAnswer()"],
@@ -177,7 +177,7 @@ describe("Conjure Pricing Core Tests", function () {
   });
 
   it("Should get the price median right for a 3 oracles", async function () {
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[0,2,0],[0,0,0],[30,30,30],[8,8,18]],
         [0x00, 0x00, 0x00],
         ["latestAnswer()", "latestAnswer()", "latestAnswer()"],
@@ -200,7 +200,7 @@ describe("Conjure Pricing Core Tests", function () {
   });
 
   it("Should get the price median right for a 4 oracles", async function () {
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[0,2,0,0],[0,0,0,0],[30,30,30,10],[8,8,18,8]],
         [0x00, 0x00, 0x00, 0x00],
         ["latestAnswer()", "latestAnswer()", "latestAnswer()", "latestAnswer()"],
@@ -224,7 +224,7 @@ describe("Conjure Pricing Core Tests", function () {
   });
 
   it("Should get the right avg price for a single basket", async function () {
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[2],[0],[100],[8]],
         [0x00],
         ["latestAnswer()"],
@@ -247,7 +247,7 @@ describe("Conjure Pricing Core Tests", function () {
   });
 
   it("Should revert if basket asset weights do not sum up to 100", async function () {
-    await expect(  conjureFactory.ConjureMint(
+    await expect(  conjureFactory.conjureMint(
         [[0,0,0],[0,0,0],[30,30,59],[8,8,8]],
         [0x00, 0x00, 0x00],
         ["latestAnswer()", "latestAnswer()", "latestAnswer()"],
@@ -262,7 +262,7 @@ describe("Conjure Pricing Core Tests", function () {
   });
 
   it("Should revert if the call of custom oracle is not ok (wrong payload)", async function () {
-    await expect(  conjureFactory.ConjureMint(
+    await expect(  conjureFactory.conjureMint(
         [[2,2,2],[0,0,0],[30,30,40],[8,8,8]],
         [0x123, 0x456, 0x00],
         ["testwrongcall()", "latestAnswer()", "latestAnswer()"],
@@ -277,7 +277,7 @@ describe("Conjure Pricing Core Tests", function () {
   });
 
   it("Should revert with no oracle data", async function () {
-    await expect(  conjureFactory.ConjureMint(
+    await expect(  conjureFactory.conjureMint(
         [[],[],[],[]],
         [],
         [],
@@ -291,7 +291,7 @@ describe("Conjure Pricing Core Tests", function () {
   });
 
   it("Should get the price avg right for 3 oracles", async function () {
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[0,0,0],[0,0,0],[30,30,40],[8,8,8]],
         [0x00, 0x00, 0x00],
         ["latestAnswer()", "latestAnswer()", "latestAnswer()"],
@@ -315,7 +315,7 @@ describe("Conjure Pricing Core Tests", function () {
   });
 
   it("Should get the price avg right for 3 oracles mixed order", async function () {
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[0,0,0],[0,0,0],[30,30,40],[8,8,8]],
         [0x00, 0x00, 0x00],
         ["latestAnswer()", "latestAnswer()", "latestAnswer()"],
@@ -339,7 +339,7 @@ describe("Conjure Pricing Core Tests", function () {
   });
 
   it("Should get the price avg right for 3 oracles mixed order 2", async function () {
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[0,0,0],[0,0,0],[30,30,40],[8,8,8]],
         [0x00, 0x00, 0x00],
         ["latestAnswer()", "latestAnswer()", "latestAnswer()"],
@@ -363,7 +363,7 @@ describe("Conjure Pricing Core Tests", function () {
   });
 
   it("Should get the right avg price for an INVERSE single basket", async function () {
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[2],[0],[100],[8]],
         [0x00],
         ["latestAnswer()"],
@@ -400,7 +400,7 @@ describe("Conjure Pricing Core Tests", function () {
     // set back the inverse mock
     await mockinverse.setState(0);
 
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[2],[0],[100],[8]],
         [0x00],
         ["latestAnswer()"],
@@ -437,7 +437,7 @@ describe("Conjure Pricing Core Tests", function () {
     // set back the inverse mock
     await mockinverse.setState(0);
 
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[2],[0],[100],[8]],
         [0x00],
         ["latestAnswer()"],

@@ -24,6 +24,10 @@ contract ConjureFactory {
         address payable _conjureRouter
     )
     {
+        require(_conjureImplementation != address(0), "No zero address for conjure");
+        require(_etherCollateralImplementation != address(0), "No zero address for etherCollateral");
+        require(_conjureRouter != address(0), "No zero address for conjureRouter");
+        
         factoryOwner = msg.sender;
         conjureImplementation = _conjureImplementation;
         etherCollateralImplementation = _etherCollateralImplementation;
@@ -46,7 +50,7 @@ contract ConjureFactory {
      *  @return conjure the conjure contract address
      *  @return etherCollateral the EtherCollateral address
     */
-    function ConjureMint(
+    function conjureMint(
         // oracle type, oracle value, oracle weight, oracle decimals array
         uint256[][4] memory oracleTypesValuesWeightsDecimals,
         bytes[] memory callDataArray,
@@ -62,11 +66,13 @@ contract ConjureFactory {
         // inverse asset indicator
         bool inverse
     )
-    public
+    external
     returns(address conjure, address etherCollateral)
     {
         conjure = conjureImplementation.createClone();
         etherCollateral = etherCollateralImplementation.createClone();
+        
+        emit NewConjure(conjure, etherCollateral);
 
         IConjure(conjure).initialize(
             nameSymbol,
@@ -90,21 +96,14 @@ contract ConjureFactory {
             signatures_,
             callDataArray
         );
-
-        emit NewConjure(conjure, etherCollateral);
     }
-
-    /**
-    * receive function to receive funds
-    */
-    receive() external payable {}
 
     /**
      * @dev gets the address of the current factory owner
      *
      * @return the address of the conjure router
     */
-    function getConjureRouter() public view returns (address payable) {
+    function getConjureRouter() external view returns (address payable) {
         return conjureRouter;
     }
 
@@ -113,8 +112,10 @@ contract ConjureFactory {
      *
      * @param conjureImplementation_ the address of the new implementation
     */
-    function newConjureImplementation(address conjureImplementation_) public {
+    function newConjureImplementation(address conjureImplementation_) external {
         require(msg.sender == factoryOwner, "Only factory owner");
+        require(conjureImplementation_ != address(0), "No zero address for conjureImplementation_");
+        
         conjureImplementation = conjureImplementation_;
     }
 
@@ -123,8 +124,10 @@ contract ConjureFactory {
      *
      * @param etherCollateralImplementation_ the address of the new implementation
     */
-    function newEtherCollateralImplementation(address etherCollateralImplementation_) public {
+    function newEtherCollateralImplementation(address etherCollateralImplementation_) external {
         require(msg.sender == factoryOwner, "Only factory owner");
+        require(etherCollateralImplementation_ != address(0), "No zero address for etherCollateralImplementation_");
+
         etherCollateralImplementation = etherCollateralImplementation_;
     }
 
@@ -133,8 +136,10 @@ contract ConjureFactory {
      *
      * @param conjureRouter_ the address of the new router
     */
-    function newConjureRouter(address payable conjureRouter_) public {
+    function newConjureRouter(address payable conjureRouter_) external {
         require(msg.sender == factoryOwner, "Only factory owner");
+        require(conjureRouter_ != address(0), "No zero address for conjureRouter_");
+        
         conjureRouter = conjureRouter_;
     }
 
@@ -143,11 +148,18 @@ contract ConjureFactory {
      *
      * @param newOwner the address of the new owner
     */
-    function newFactoryOwner(address payable newOwner) public {
+    function newFactoryOwner(address payable newOwner) external {
         require(msg.sender == factoryOwner, "Only factory owner");
+        require(newOwner != address(0), "No zero address for newOwner");
+        
         factoryOwner = newOwner;
         emit FactoryOwnerChanged(factoryOwner);
     }
+
+    /**
+     * receive function to receive funds
+    */
+    receive() external payable {}
 }
 
 interface IConjure {

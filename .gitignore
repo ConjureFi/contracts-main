@@ -4,3 +4,7 @@ node_modules
 cache
 artifacts
 .idea
+contracts/.DS_Store
+.DS_Store
+package-lock.json
+package-lock.json

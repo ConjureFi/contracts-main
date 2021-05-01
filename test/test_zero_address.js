@@ -65,7 +65,7 @@ describe("Test Setup", function () {
         let conjure, ethercollateral;
         it('Should show the deployed conjure contracts gas consumption', async () => {
 
-            const tx = await conjureFactory.ConjureMint(
+            const tx = await conjureFactory.conjureMint(
                 [[0], [0], [100], [8]],
                 [0x00],
                 ["signature1"],
@@ -91,13 +91,19 @@ describe("Test Setup", function () {
                 params: [conjureFactory.address]}
             )
 
+            console.log('here')
+
             // send 1 eth
             const tx = await owner.sendTransaction({
                 to: conjureFactory.address,
                 value: ethers.utils.parseEther("1.0")
             });
 
+            console.log('here')
+
             const signer = await ethers.provider.getSigner(conjureFactory.address)
+
+            console.log('here')
 
             await expect(conjure.connect(signer).init(
                 false,
@@ -107,6 +113,8 @@ describe("Test Setup", function () {
                 [],
                 []
             )).to.be.revertedWith("Contract already inited");
+
+            console.log('here')
 
             await hre.network.provider.request({
                 method: "hardhat_stopImpersonatingAccount",

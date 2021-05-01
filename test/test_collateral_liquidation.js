@@ -150,7 +150,7 @@ describe("EtherCollateral Liquidations Tests", function () {
     // change the price of the asset
     await mockliquidation.setState(0)
 
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[2], [0], [100], [8]],
         [0x00],
         ["latestAnswer()"],
@@ -267,7 +267,7 @@ describe("EtherCollateral Liquidations Tests", function () {
     // change the price of the asset
     await mockliquidation.setState(0)
 
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[2], [0], [100], [8]],
         [0x00],
         ["latestAnswer()"],
@@ -384,7 +384,7 @@ describe("EtherCollateral Liquidations Tests", function () {
     // change the price of the asset
     await mockliquidation.setState(0)
 
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[2], [0], [100], [8]],
         [0x00],
         ["latestAnswer()"],
@@ -501,7 +501,7 @@ describe("EtherCollateral Liquidations Tests", function () {
     // change the price of the asset
     await mockliquidation.setState(0)
 
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[2], [0], [100], [8]],
         [0x00],
         ["latestAnswer()"],
@@ -542,7 +542,7 @@ describe("EtherCollateral Liquidations Tests", function () {
     // change the price of the asset
     await mockliquidation.setState(0)
 
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[2], [0], [100], [8]],
         [0x00],
         ["latestAnswer()"],
@@ -586,7 +586,7 @@ describe("EtherCollateral Liquidations Tests", function () {
     // change the price of the asset
     await mockliquidation.setState(0)
 
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[2], [0], [100], [8]],
         [0x00],
         ["latestAnswer()"],
@@ -694,7 +694,7 @@ describe("EtherCollateral Liquidations Tests", function () {
     // change the price of the asset
     await mockliquidation.setState(0)
 
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[2], [0], [100], [8]],
         [0x00],
         ["latestAnswer()"],

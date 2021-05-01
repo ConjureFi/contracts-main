@@ -12,6 +12,8 @@ contract ConjureRouter {
 
     // event for distribution
     event FeeDistribution(address treasury, address stakingrewards, uint256 amount);
+    // event for new threshold
+    event NewThreshold(uint256 value);
 
     IStakingRewards public stakingRewards;
     address payable public treasury;
@@ -19,6 +21,8 @@ contract ConjureRouter {
     uint256 public threshold = 0.1 ether;
 
     constructor(IStakingRewards _stakingRewards, address payable _treasury) {
+        require(_treasury != address(0), "not zero address");
+    
         stakingRewards = _stakingRewards;
         treasury = _treasury;
         owner = msg.sender;
@@ -34,11 +38,11 @@ contract ConjureRouter {
         uint256 amount = address(this).balance;
 
         if (amount > threshold) {
+            emit FeeDistribution(treasury, address(stakingRewards), amount);
+            
             treasury.transfer(amount / 2);
             payable(address(stakingRewards)).transfer(amount / 2);
             stakingRewards.notifyRewardAmount(amount / 2);
-
-            emit FeeDistribution(treasury, address(stakingRewards), amount);
         }
     }
 
@@ -66,26 +70,27 @@ contract ConjureRouter {
         distribute();
     }
 
-    function newStakingrewards(IStakingRewards newRewards) public {
+    function newStakingrewards(IStakingRewards newRewards) external {
         require(msg.sender == owner, "Only owner");
         require(address(newRewards) != address(0), "not zero address");
         stakingRewards = newRewards;
     }
 
-    function newTreasury(address payable newTreasuryAddress) public {
+    function newTreasury(address payable newTreasuryAddress) external {
         require(msg.sender == owner, "Only owner");
         require(newTreasuryAddress != address(0), "not zero address");
         treasury = newTreasuryAddress;
     }
 
-    function setNewOwner(address newOwner) public {
+    function setNewOwner(address newOwner) external {
         require(msg.sender == owner, "Only owner");
         require(newOwner != address(0), "not zero address");
         owner = newOwner;
     }
 
-    function setNewThreshold(uint256 newthreshold) public {
+    function setNewThreshold(uint256 newthreshold) external {
         require(msg.sender == owner, "Only owner");
         threshold = newthreshold;
+        emit NewThreshold(threshold);
     }
 }

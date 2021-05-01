@@ -65,7 +65,7 @@ describe("Conjure Basic Tests", function () {
 
   // basic mints
   it("Should be able to mint a new Conjure Contract", async function () {
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[0],[0],[100],[8]],
         [0x00],
         ["signature1"],
@@ -147,7 +147,7 @@ describe("Conjure Basic Tests", function () {
 
   it("Should not init with odd array values", async function () {
     // check if it reverts when we take a wrong input type
-    await expect(conjureFactory.connect(addr1).ConjureMint(
+    await expect(conjureFactory.connect(addr1).conjureMint(
         [[0],[0],["abc"],[8]],
         [0x00],
         ["signature1"],
@@ -160,7 +160,7 @@ describe("Conjure Basic Tests", function () {
   });
 
   it("Should not init with 0 divisor", async function () {
-    await expect(conjureFactory.connect(addr1).ConjureMint(
+    await expect(conjureFactory.connect(addr1).conjureMint(
         [[0],[0],[100],[8]],
         [0x00],
         ["signature1"],
@@ -173,7 +173,7 @@ describe("Conjure Basic Tests", function () {
   });
 
   it("Should not init with too low c ratio", async function () {
-    await expect(conjureFactory.connect(addr1).ConjureMint(
+    await expect(conjureFactory.connect(addr1).conjureMint(
         [[0],[0],[100],[8]],
         [0x00],
         ["signature1"],
@@ -186,7 +186,7 @@ describe("Conjure Basic Tests", function () {
   });
 
   it("Should not init with too high c ratio", async function () {
-    await expect(conjureFactory.connect(addr1).ConjureMint(
+    await expect(conjureFactory.connect(addr1).conjureMint(
         [[0],[0],[100],[8]],
         [0x00],
         ["signature1"],
@@ -199,7 +199,7 @@ describe("Conjure Basic Tests", function () {
   });
 
   it("Should init the contract", async function () {
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[0],[0],[100],[8]],
         [0x00],
         ["signature1"],
@@ -256,7 +256,7 @@ describe("Conjure Basic Tests", function () {
   });
 
   it("Should not init with decimals too high", async function () {
-    await expect(conjureFactory.connect(addr1).ConjureMint(
+    await expect(conjureFactory.connect(addr1).conjureMint(
         [[0],[0],[100],[19]],
         [0x00],
         ["signature1"],

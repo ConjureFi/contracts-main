@@ -100,7 +100,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
     )
 
 
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[1],[0],[100],[18]],
         [parameters],
         ["computeAverageTokenPrice(address,uint256,uint256)"],
@@ -130,7 +130,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
     )
 
 
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[1],[0],[100],[18]],
         [parameters],
         ["computeAverageTokenPrice(address,uint256,uint256)"],
@@ -160,7 +160,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
     )
 
 
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[0],[0],[100],[8]],
         [parameters],
         ["chainlink call"],
@@ -189,7 +189,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
         [mocksupply.address,0, 60*60*24*7]
     )
 
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[1],[0],[100],[18]],
         [parameters],
         ["computeAverageTokenPrice(address,uint256,uint256)"],
@@ -219,7 +219,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
         [mocksupply.address,0, 60*60*24*7]
     )
 
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[0],[0],[100],[8]],
         [parameters],
         ["chainlink call"],
@@ -249,7 +249,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
         [mocksupply.address,0, 60*60*24*7]
     )
 
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[1],[0],[100],[18]],
         [parameters],
         ["computeAverageTokenPrice(address,uint256,uint256)"],
@@ -280,7 +280,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
         [mocksupply.address,0, 60*60*24*7]
     )
 
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[1],[0],[100],[18]],
         [parameters],
         ["computeAverageTokenPrice(address,uint256,uint256)"],
@@ -310,7 +310,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
         [mocksupply.address,0, 60*60*24*7]
     )
 
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[1],[0],[100],[17]],
         [parameters],
         ["computeAverageTokenPrice(address,uint256,uint256)"],
@@ -341,7 +341,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
         [mocksupply.address,0, 60*60*24*7]
     )
 
-    await expect(conjureFactory.ConjureMint(
+    await expect(conjureFactory.conjureMint(
         [[1],[0],[100],[17]],
         [parameters],
         ["computeAverageTokenPrice(address,uint256,uint256)"],

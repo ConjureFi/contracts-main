@@ -24,7 +24,6 @@ contract EtherCollateral is ReentrancyGuard {
     uint256 internal constant ONE_THOUSAND = 1e18 * 1000;
     uint256 internal constant ONE_HUNDRED = 1e18 * 100;
     uint256 internal constant ONE_HUNDRED_TEN = 1e18 * 110;
-    uint256 internal constant ACCOUNT_LOAN_LIMIT_CAP = 1000;
 
     // ========== SETTER STATE VARIABLES ==========
 
@@ -148,6 +147,8 @@ contract EtherCollateral is ReentrancyGuard {
     {
         require(_factoryContract == address(0), "already initialized");
         require(_factoryAddress != address(0), "factory can not be null");
+        require(_owner != address(0), "_owner can not be null");
+        require(_asset != address(0), "_asset can not be null");
         // c-ratio greater 100 and less or equal 1000
         require(_mintingFeeRatio[1] <= ONE_THOUSAND, "C-Ratio Too high");
         require(_mintingFeeRatio[1] > ONE_HUNDRED_TEN, "C-Ratio Too low");
@@ -168,6 +169,8 @@ contract EtherCollateral is ReentrancyGuard {
      * @param _newOwner the new owner address of the contract
     */
     function changeOwner(address payable _newOwner) external onlyOwner {
+        require(_newOwner != address(0), "_newOwner can not be null");
+    
         owner = _newOwner;
         emit NewOwner(_newOwner);
     }
@@ -190,7 +193,7 @@ contract EtherCollateral is ReentrancyGuard {
      *
      * @param _issueFeeRate the new minting fee
     */
-    function setIssueFeeRate(uint256 _issueFeeRate) public onlyOwner {
+    function setIssueFeeRate(uint256 _issueFeeRate) external onlyOwner {
         // fee can only be lowered
         require(_issueFeeRate <= issueFeeRate, "Fee can only be lowered");
 
@@ -478,6 +481,9 @@ contract EtherCollateral is ReentrancyGuard {
 
         // Issue the synth (less fee)
         syntharb().mint(msg.sender, _loanAmount);
+        
+        // Tell the Dapps a loan was created
+        emit LoanCreated(msg.sender, loanID, _loanAmount);
 
         // Fee distribution. Mint the fees into the FeePool and record fees paid
         if (mintingFee > 0) {
@@ -488,9 +494,6 @@ contract EtherCollateral is ReentrancyGuard {
             IConjureRouter(conjureRouter).deposit{value:feeToSend}();
             arbasset.transfer(mintingFee.sub(feeToSend));
         }
-
-        // Tell the Dapps a loan was created
-        emit LoanCreated(msg.sender, loanID, _loanAmount);
     }
 
     /**
@@ -553,12 +556,12 @@ contract EtherCollateral is ReentrancyGuard {
         (uint256 collateralRatioAfter, ) = _loanCollateralRatio(loanAfter);
 
         require(collateralRatioAfter > liquidationRatio, "Collateral ratio below liquidation after withdraw");
+        
+        // Tell the Dapps collateral was added to loan
+        emit CollateralWithdrawn(msg.sender, loanID, withdrawAmount, loanAfter.collateralAmount);
 
         // transfer ETH to msg.sender
         msg.sender.transfer(withdrawAmount);
-
-        // Tell the Dapps collateral was added to loan
-        emit CollateralWithdrawn(msg.sender, loanID, withdrawAmount, loanAfter.collateralAmount);
     }
 
     /**
@@ -672,13 +675,13 @@ contract EtherCollateral is ReentrancyGuard {
 
         // check if we have a full closure here
         if (close) {
-            _closeLoan(synthLoan.account, synthLoan.loanID, true);
             // emit loan liquidation event
             emit LoanLiquidated(
                 _loanCreatorsAddress,
                 _loanID,
                 msg.sender
             );
+            _closeLoan(synthLoan.account, synthLoan.loanID, true);
         } else {
             // emit loan liquidation event
             emit LoanPartiallyLiquidated(
@@ -734,11 +737,11 @@ contract EtherCollateral is ReentrancyGuard {
 
         uint256 remainingCollateral = synthLoan.collateralAmount;
 
-        // Send remaining collateral to loan creator
-        synthLoan.account.transfer(remainingCollateral);
-
         // Tell the Dapps
         emit LoanClosed(account, loanID);
+
+        // Send remaining collateral to loan creator
+        synthLoan.account.transfer(remainingCollateral);
     }
 
     /**

@@ -53,7 +53,7 @@ describe("Conjure Factory Tests", function () {
   // basic mints
   it("Should be able to mint a new Conjure Contract", async function () {
     // using 0 address for needed addresses we just check if the call works here
-    const tx = await conjureFactory.ConjureMint(
+    const tx = await conjureFactory.conjureMint(
         [[0],[0],[100],[8]],
         [0x00],
         ["signature1"],

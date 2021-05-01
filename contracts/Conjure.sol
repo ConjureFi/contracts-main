@@ -31,7 +31,7 @@ contract Conjure is IERC20, ReentrancyGuard {
     string internal _symbol;
 
     // representing the decimals of the token
-    uint8 internal immutable _decimals = 18;
+    uint8 internal constant DECIMALS = 18;
 
     // a record of balance of a specific account by address
     mapping(address => uint256) private _balances;
@@ -93,13 +93,13 @@ contract Conjure is IERC20, ReentrancyGuard {
     uint256 public _deploymentPrice;
 
     // maximum decimal size for the used prices
-    uint256 private constant _maximumDecimals = 18;
+    uint256 private constant MAXIMUM_DECIMALS = 18;
 
     // The number representing 1.0
     uint256 private constant UNIT = 10**18;
 
     // chainLink aggregator decimals to give back
-    uint256 private constant chainLinkReturnDecimals = 8;
+    uint256 private constant CHAINLINK_RETURN_DECIMALS = 8;
 
     // the eth usd price feed chainLink oracle address
     //chainLink eth/usd mainnet: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
@@ -110,6 +110,8 @@ contract Conjure is IERC20, ReentrancyGuard {
     event NewOwner(address newOwner);
     event Issued(address indexed account, uint256 value);
     event Burned(address indexed account, uint256 value);
+    event AssetTypeSet(uint256 value);
+    event IndexDivisorSet(uint256 value);
 
     // only owner modifier
     modifier onlyOwner {
@@ -144,6 +146,7 @@ contract Conjure is IERC20, ReentrancyGuard {
     {
         require(_factoryContract == address(0), "already initialized");
         require(factoryAddress_ != address(0), "factory can not be null");
+        require(collateralContract != address(0), "collateralContract can not be null");
 
         _owner = payable(conjureAddresses[0]);
         _name = nameSymbol[0];
@@ -183,6 +186,9 @@ contract Conjure is IERC20, ReentrancyGuard {
         _numoracles = oracleAddresses_[0].length;
         _indexdivisor = divisorAssetType[0];
         _inverse = inverse_;
+        
+        emit AssetTypeSet(_assetType);
+        emit IndexDivisorSet(_indexdivisor);
 
         uint256 weightCheck;
 
@@ -207,6 +213,8 @@ contract Conjure is IERC20, ReentrancyGuard {
         if (_assetType == 1) {
             require(weightCheck == 100, "Weights not 100");
         }
+        
+        
 
         updatePrice();
         _deploymentPrice = getLatestPrice();
@@ -269,6 +277,8 @@ contract Conjure is IERC20, ReentrancyGuard {
      * @param _newOwner the new owner address of the contract
     */
     function changeOwner(address payable _newOwner) external onlyOwner {
+        require(_newOwner != address(0), "_newOwner can not be null");
+    
         _owner = _newOwner;
         emit NewOwner(_newOwner);
     }
@@ -310,7 +320,7 @@ contract Conjure is IERC20, ReentrancyGuard {
         ,
         ) = AggregatorV3Interface(ethUsdChainLinkOracle).latestRoundData();
 
-        return uint(price) * 10 ** (_maximumDecimals - chainLinkReturnDecimals);
+        return uint(price) * 10 ** (MAXIMUM_DECIMALS - CHAINLINK_RETURN_DECIMALS);
     }
 
     /**
@@ -413,7 +423,7 @@ contract Conjure is IERC20, ReentrancyGuard {
      *
      * @return the last recorded time of a synths price
     */
-    function getLatestPriceTime() public view returns (uint) {
+    function getLatestPriceTime() external view returns (uint) {
         return _latestobservedtime;
     }
 
@@ -461,8 +471,8 @@ contract Conjure is IERC20, ReentrancyGuard {
                 prices[i] = getLatestPrice(priceFeed);
 
                 // norming price
-                if (_maximumDecimals != _oracleData[i].decimals) {
-                    prices[i] = prices[i] * 10 ** (_maximumDecimals - _oracleData[i].decimals);
+                if (MAXIMUM_DECIMALS != _oracleData[i].decimals) {
+                    prices[i] = prices[i] * 10 ** (MAXIMUM_DECIMALS - _oracleData[i].decimals);
                 }
             }
 
@@ -493,8 +503,8 @@ contract Conjure is IERC20, ReentrancyGuard {
                     prices[i] = abi.decode(data, (uint));
 
                     // norming price
-                    if (_maximumDecimals != _oracleData[i].decimals) {
-                        prices[i] = prices[i] * 10 ** (_maximumDecimals - _oracleData[i].decimals);
+                    if (MAXIMUM_DECIMALS != _oracleData[i].decimals) {
+                        prices[i] = prices[i] * 10 ** (MAXIMUM_DECIMALS - _oracleData[i].decimals);
                     }
                 }
             }
@@ -506,9 +516,9 @@ contract Conjure is IERC20, ReentrancyGuard {
                 uint tokenDecimals = IERC20(_oracleData[i].tokenaddress).decimals();
 
                 // norm total supply
-                if (_maximumDecimals != tokenDecimals) {
+                if (MAXIMUM_DECIMALS != tokenDecimals) {
                     require(tokenDecimals <= 18, "Decimals too high");
-                    tokenTotalSupply = tokenTotalSupply * 10 ** (_maximumDecimals - tokenDecimals);
+                    tokenTotalSupply = tokenTotalSupply * 10 ** (MAXIMUM_DECIMALS - tokenDecimals);
                 }
 
                 // index use market cap
@@ -569,7 +579,7 @@ contract Conjure is IERC20, ReentrancyGuard {
     /**
      * @dev Returns the name of the token.
      */
-    function name() public override view returns (string memory) {
+    function name() external override view returns (string memory) {
         return _name;
     }
 
@@ -577,7 +587,7 @@ contract Conjure is IERC20, ReentrancyGuard {
      * @dev Returns the symbol of the token, usually a shorter version of the
      * name.
      */
-    function symbol() public override view returns (string memory) {
+    function symbol() external override view returns (string memory) {
         return _symbol;
     }
 
@@ -590,21 +600,21 @@ contract Conjure is IERC20, ReentrancyGuard {
      * no way affects any of the arithmetic of the contract, including
      * {IERC20-balanceOf} and {IERC20-transfer}.
      */
-    function decimals() public override pure returns (uint8) {
-        return _decimals;
+    function decimals() external override pure returns (uint8) {
+        return DECIMALS;
     }
 
     /**
     * @dev See {IERC20-totalSupply}.
     */
-    function totalSupply() public override view returns (uint256) {
+    function totalSupply() external override view returns (uint256) {
         return _totalSupply;
     }
 
     /**
     * @dev See {IERC20-balanceOf}. Uses burn abstraction for balance updates without gas and universally.
     */
-    function balanceOf(address account) public override view returns (uint256) {
+    function balanceOf(address account) external override view returns (uint256) {
         return _balances[account];
     }
 
@@ -626,7 +636,7 @@ contract Conjure is IERC20, ReentrancyGuard {
      * @dev See {IERC20-allowance}.
      */
     function allowance(address owner, address spender)
-    public
+    external
     override
     view
     returns (uint256)
@@ -642,7 +652,7 @@ contract Conjure is IERC20, ReentrancyGuard {
      * - `spender` cannot be the zero address.
      */
     function approve(address spender, uint256 amount)
-    public
+    external
     override
     returns (bool)
     {
