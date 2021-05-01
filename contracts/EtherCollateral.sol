@@ -480,7 +480,7 @@ contract EtherCollateral is ReentrancyGuard {
 
         // Fee distribution. Mint the fees into the FeePool and record fees paid
         if (mintingFee > 0) {
-            // calculate back factory owner fee is 25% on top of creator fee
+            // conjureRouter gets 25% of the fee
             address payable conjureRouter = IConjureFactory(_factoryContract).getConjureRouter();
             uint256 feeToSend = mintingFee / 4;
 
