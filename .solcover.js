@@ -12,6 +12,11 @@ module.exports = {
     'ConjureGovernorAlpha.sol',
     'ConjureTimeLock.sol',
     'CNJ.sol',
-    'SafeDecimalMath.sol'
+    'SafeDecimalMath.sol',
+	'ConjureRouter.sol',
+	'Owned.sol',
+	'Pausable.sol',
+	'RewardsDistributionRecipient.sol',
+	'StakingRewards.sol'
   ]
 }
