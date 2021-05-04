@@ -100,6 +100,10 @@ describe("Conjure Basic Tests", function () {
     await expect(conjure.connect(addr1).changeOwner(addr1.address)).to.be.revertedWith("Only the contract owner may perform this action");
   });
 
+  it("Should revert if the newOwner is the zero address", async function () {
+    await expect(conjure.changeOwner(zeroaddress)).to.be.revertedWith("_newOwner can not be null");
+  });
+
   it("Should be able to change owner", async function () {
     await conjure.changeOwner(addr1.address);
     let owner = await conjure._owner();

@@ -598,7 +598,7 @@ describe("EtherCollateral Tests", function () {
 
     });
 
-    it("Should be able to change the owner of the EtherCollateral Contract and also check if the function is only callable by the current owner", async function () {
+    it("Should be able to change the owner of the EtherCollateral Contract and also check if the function is only callable by the current owner and owner cant be zero address", async function () {
         const tx = await conjureFactory.conjureMint(
             [[0], [0], [100], [8]],
             [0x00],
@@ -616,6 +616,7 @@ describe("EtherCollateral Tests", function () {
         ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
 
         await expect(ethercollateral.connect(addr1).changeOwner(addr1.address)).to.be.revertedWith("Only the contract owner may perform this action");
+        await expect(ethercollateral.changeOwner(zeroaddress)).to.be.revertedWith("_newOwner can not be null");
 
         await ethercollateral.changeOwner(addr1.address)
 

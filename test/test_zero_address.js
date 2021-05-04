@@ -125,12 +125,33 @@ describe("Test Setup", function () {
                 "0x0000000000000000000000000000000000000000"
             )).to.be.revertedWith("factory can not be null");
 
+            await expect(conjure.initialize(
+                ["test","symbol"],
+                [],
+                owner.address,
+                "0x0000000000000000000000000000000000000000"
+            )).to.be.revertedWith("collateralContract can not be null");
+
             await expect(ethercollateral.initialize(
                 "0x0000000000000000000000000000000000000000",
                 "0x0000000000000000000000000000000000000000",
                 "0x0000000000000000000000000000000000000000",
                 [1,500]
             )).to.be.revertedWith("factory can not be null");
+
+            await expect(ethercollateral.initialize(
+                "0x0000000000000000000000000000000000000000",
+                "0x0000000000000000000000000000000000000000",
+                owner.address,
+                [1,500]
+            )).to.be.revertedWith("_owner can not be null");
+
+            await expect(ethercollateral.initialize(
+                "0x0000000000000000000000000000000000000000",
+                owner.address,
+                owner.address,
+                [1,500]
+            )).to.be.revertedWith("_asset can not be null");
 
         })
         })
