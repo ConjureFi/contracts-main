@@ -481,6 +481,10 @@ contract ConjureGovernorAlpha {
 
         emit VoteCast(voter, proposalId, support, votes);
     }
+    
+    function __acceptAdmin() public {
+        timelock.acceptAdmin();
+    }
 
     function add256(uint256 a, uint256 b) internal pure returns (uint256) {
         uint256 c = a + b;
