@@ -88,19 +88,13 @@ describe("Test Setup", function () {
                 params: [conjureFactory.address]}
             )
 
-            console.log('here')
-
             // send 1 eth
             const tx = await owner.sendTransaction({
                 to: conjureFactory.address,
                 value: ethers.utils.parseEther("1.0")
             });
 
-            console.log('here')
-
             const signer = await ethers.provider.getSigner(conjureFactory.address)
-
-            console.log('here')
 
             await expect(conjure.connect(signer).init(
                 false,
@@ -110,8 +104,6 @@ describe("Test Setup", function () {
                 [],
                 []
             )).to.be.revertedWith("Contract already inited");
-
-            console.log('here')
 
             await hre.network.provider.request({
                 method: "hardhat_stopImpersonatingAccount",

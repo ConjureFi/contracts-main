@@ -122,7 +122,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
     expect(diff).to.be.lessThan(errorDelta);
   });
 
-  it("Should get the price for index asset type (price * mcap)", async function () {
+  it("Should get the price for an index asset type (price * mcap)", async function () {
 
     let parameters = encoder.encode(
         ["address","uint256","uint256"],
@@ -152,7 +152,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
     expect(diff).to.be.lessThan(errorDelta);
   });
 
-  it("Should get the price for index asset type and chainlink asset type (price * mcap)", async function () {
+  it("Should get the right price for an index asset type and chainlink asset type (price * mcap)", async function () {
 
     let parameters = encoder.encode(
         ["address","uint256","uint256"],
@@ -182,7 +182,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
     expect(diff).to.be.lessThan(errorDelta);
   });
 
-  it("Should get the price for sqrt index asset type sqrt(price * mcap)", async function () {
+  it("Should get the right price for sqrt index asset type sqrt(price * mcap)", async function () {
 
     let parameters = encoder.encode(
         ["address","uint256","uint256"],
@@ -212,7 +212,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
     expect(diff).to.be.lessThan(errorDelta);
   });
 
-  it("Should get the price for sqrt index asset type sqrt(price * mcap) and type chainlink", async function () {
+  it("Should get the right price for a sqrt index asset type sqrt(price * mcap) and type chainlink", async function () {
 
     let parameters = encoder.encode(
         ["address","uint256","uint256"],
@@ -242,7 +242,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
     expect(diff).to.be.lessThan(errorDelta);
   });
 
-  it("Should get the price for index asset type (price * mcap) with index divisor set to 2", async function () {
+  it("Should get the right price for an index asset type (price * mcap) with index divisor set to 2 to check if divisor works", async function () {
 
     let parameters = encoder.encode(
         ["address","uint256","uint256"],
@@ -271,7 +271,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
     expect(diff).to.be.lessThan(errorDelta);
   });
 
-  it("Should get the price for sqrt index asset type sqrt(price * mcap) and supply 0", async function () {
+  it("Should get the right price for a sqrt index asset type sqrt(price * mcap) and supply 0 to check sqrt function behaviour", async function () {
 
     await mocksupply.setState(3)
 
@@ -301,7 +301,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
 
   });
 
-  it("Should get the price for index asset type (price * mcap) with index divisor set to 2 and total supply is 17 decimals", async function () {
+  it("Should get the right price for an index asset type (price * mcap) with index divisor set to 2 and total supply is 17 decimals", async function () {
 
     await mocksupply.setState(1)
 
@@ -332,7 +332,7 @@ describe("Conjure Pricing Market Cap Tests", function () {
     expect(diff).to.be.lessThan(errorDelta);
   });
 
-  it("Should revert if the decimals of the token lookup is greater than 18", async function () {
+  it("Should revert if the decimals of the token looked up are greater than 18", async function () {
 
     await mocksupply.setState(2)
 
