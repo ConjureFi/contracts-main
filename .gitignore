@@ -10,3 +10,4 @@ package-lock.json
 package-lock.json
 contracts/Conjure_flat.sol
 contracts/EtherCollateral_flat.sol
+scripts/decoder.js
