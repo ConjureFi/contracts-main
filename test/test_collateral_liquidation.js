@@ -146,7 +146,7 @@ describe("EtherCollateral Liquidations Tests", function () {
     await mockliquidation.deployed();
   })
 
-  it("should be able to partially liquidate loan", async function () {
+  it("Should be able to partially liquidate loan and check if the loan afterwards is open and the functions calculates the right amount to liquidate", async function () {
     // change the price of the asset
     await mockliquidation.setState(0)
 
@@ -263,7 +263,7 @@ describe("EtherCollateral Liquidations Tests", function () {
     expect(owner_wallet_after).to.be.equal(owner_wallet_before.sub(owner_wallet_before.sub(amountToLiquidate)))
   });
 
-  it("should be able to partially liquidate loan with less debt to cover", async function () {
+  it("Should be able to partially liquidate loan with less debt to cover than the liquidation amount and check the outcome", async function () {
     // change the price of the asset
     await mockliquidation.setState(0)
 
@@ -380,7 +380,7 @@ describe("EtherCollateral Liquidations Tests", function () {
     expect(owner_wallet_after).to.be.equal(owner_wallet_before.sub(owner_wallet_before.sub(amountToLiquidate)))
   });
 
-  it("should be able to partially liquidate loan with higher debt to cover", async function () {
+  it("Should be able to partially liquidate loan with higher debt to cover", async function () {
     // change the price of the asset
     await mockliquidation.setState(0)
 
@@ -497,7 +497,7 @@ describe("EtherCollateral Liquidations Tests", function () {
     expect(owner_wallet_after).to.be.equal(owner_wallet_before.sub(owner_wallet_before.sub(amountToLiquidate)))
   });
 
-  it("cant liquidate healthy loan", async function () {
+  it("Cant liquidate a healthy loan (C-Ratio above liquidation ratio) and check if the call reverts", async function () {
     // change the price of the asset
     await mockliquidation.setState(0)
 
@@ -538,7 +538,7 @@ describe("EtherCollateral Liquidations Tests", function () {
         .revertedWith("Collateral ratio above liquidation ratio")
   });
 
-  it("cant liquidate if too less liquidator funds", async function () {
+  it("Cant liquidate if the calling account has not enough liquidator funds", async function () {
     // change the price of the asset
     await mockliquidation.setState(0)
 
@@ -582,7 +582,7 @@ describe("EtherCollateral Liquidations Tests", function () {
         .revertedWith("Not enough balance")
   });
 
-  it("should be able to full liquidate a loan with a too high debt to cover if c-ratio is below 110%", async function () {
+  it("Should be able to fully liquidate a loan with a too high debt to cover if c-ratio is below 110%", async function () {
     // change the price of the asset
     await mockliquidation.setState(0)
 
@@ -690,7 +690,7 @@ describe("EtherCollateral Liquidations Tests", function () {
     await expect(ethercollateral.closeLoan(1)).to.be.revertedWith("Loan already closed");
   });
 
-  it("should be able to do a full closure of a loan", async function () {
+  it("Should be able to do a full closure of a loan if the C-Ratio is below the liquidation ratio and the amount to liquidate exceeds the collateral value", async function () {
     // change the price of the asset
     await mockliquidation.setState(0)
 

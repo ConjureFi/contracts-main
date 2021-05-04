@@ -64,7 +64,7 @@ describe("Conjure Basic Tests", function () {
   })
 
   // basic mints
-  it("Should be able to mint a new Conjure Contract", async function () {
+  it("Should be able to mint a new Conjure and EtherCollateral Contract", async function () {
     const tx = await conjureFactory.conjureMint(
         [[0],[0],[100],[8]],
         [0x00],
@@ -82,7 +82,7 @@ describe("Conjure Basic Tests", function () {
     ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
   });
 
-  it("Should be deployed", async function () {
+  it("Check if all values of the Conjure contract have been deployed and set right", async function () {
     let name = await conjure.name();
     let symbol = await conjure.symbol();
     let totalSupply = await conjure.totalSupply();
@@ -96,7 +96,7 @@ describe("Conjure Basic Tests", function () {
   });
 
 
-  it("Should revert if the newOwner in not called by the owner", async function () {
+  it("Should revert if the newOwner function in not called by the owner", async function () {
     await expect(conjure.connect(addr1).changeOwner(addr1.address)).to.be.revertedWith("Only the contract owner may perform this action");
   });
 
@@ -106,7 +106,7 @@ describe("Conjure Basic Tests", function () {
     expect(owner).to.equal(addr1.address);
   });
 
-  it("Should revert if the collect fees is called by non owner", async function () {
+  it("Should revert if the collect fees functio is called by non owner", async function () {
     await expect(conjure.collectFees()).to.be.revertedWith("Only the contract owner may perform this action");
   });
 
@@ -116,7 +116,7 @@ describe("Conjure Basic Tests", function () {
     return gasUsed;
   }
 
-  it("Should be able to call collect fees", async function () {
+  it("Should be able to call collect fees from the owner account and to withdraw the funds to the callers wallet", async function () {
 
     const gasprice = await provider.getGasPrice()
 
@@ -145,7 +145,7 @@ describe("Conjure Basic Tests", function () {
     expect(diff).to.be.lessThan(errorDelta);
   });
 
-  it("Should not init with odd array values", async function () {
+  it("Should not init with odd array values and revert", async function () {
     // check if it reverts when we take a wrong input type
     await expect(conjureFactory.connect(addr1).conjureMint(
         [[0],[0],["abc"],[8]],
@@ -159,7 +159,7 @@ describe("Conjure Basic Tests", function () {
     )).to.be.reverted;
   });
 
-  it("Should not init with 0 divisor", async function () {
+  it("Should not init with 0 value as divisor", async function () {
     await expect(conjureFactory.connect(addr1).conjureMint(
         [[0],[0],[100],[8]],
         [0x00],
@@ -172,7 +172,7 @@ describe("Conjure Basic Tests", function () {
     )).to.be.revertedWith("Divisor should not be 0");
   });
 
-  it("Should not init with too low c ratio", async function () {
+  it("Should not init with a too low c ratio being set", async function () {
     await expect(conjureFactory.connect(addr1).conjureMint(
         [[0],[0],[100],[8]],
         [0x00],
@@ -185,7 +185,7 @@ describe("Conjure Basic Tests", function () {
     )).to.be.revertedWith("C-Ratio Too low");
   });
 
-  it("Should not init with too high c ratio", async function () {
+  it("Should not init with a too high C-ratio being set", async function () {
     await expect(conjureFactory.connect(addr1).conjureMint(
         [[0],[0],[100],[8]],
         [0x00],
@@ -198,7 +198,7 @@ describe("Conjure Basic Tests", function () {
     )).to.be.revertedWith("C-Ratio Too high");
   });
 
-  it("Should init the contract", async function () {
+  it("Should init the contracts with a valid specification and check the last price according to the mock contract", async function () {
     const tx = await conjureFactory.conjureMint(
         [[0],[0],[100],[8]],
         [0x00],
@@ -224,27 +224,27 @@ describe("Conjure Basic Tests", function () {
     expect(lastprice).to.be.equal("1500000000000000000000");
   });
 
-  it("Should not be able to call mint from non collateral contract", async function () {
+  it("Should not be able to call mint from a non collateral contract", async function () {
     await expect(conjure.connect(addr1).mint(
         addr1.address,
         1
     )).to.be.revertedWith("Only Collateral Contract");
   });
 
-  it("Should not be able to call burn from non collateral contract", async function () {
+  it("Should not be able to call burn from a non collateral contract", async function () {
     await expect(conjure.connect(addr1).burn(
         addr1.address,
         1
     )).to.be.revertedWith("Only Collateral Contract");
   });
 
-  it("Should be able to get the price", async function () {
+  it("Should be able to call updatePrice and then get the correct latest price of the asset", async function () {
     await conjure.connect(addr1).updatePrice();
     let lastprice = await conjure.getLatestPrice()
     expect(lastprice).to.be.equal("1500000000000000000000");
   });
 
-  it("Init can only be called by the factory", async function () {
+  it("Init can only be called by the factory contract and should revert otherwise", async function () {
     await expect(conjure.connect(addr1).init(
         true,
         [1,1],
@@ -255,7 +255,7 @@ describe("Conjure Basic Tests", function () {
     )).to.be.revertedWith("can only be called by factory contract");
   });
 
-  it("Should not init with decimals too high", async function () {
+  it("Should not init the contracts with decimals too high (above 18) and should revert otherwise", async function () {
     await expect(conjureFactory.connect(addr1).conjureMint(
         [[0],[0],[100],[19]],
         [0x00],
@@ -268,12 +268,12 @@ describe("Conjure Basic Tests", function () {
     )).to.be.revertedWith("Decimals too high");
   });
 
-  it("Should be able to get the latest ethusdprice", async function () {
+  it("Should be able to get the latest ethusdprice from the contract", async function () {
     let ethusdprice = await conjure.getLatestETHUSDPrice()
     expect(ethusdprice).to.be.equal("1500000000000000000000");
   });
 
-  it("Should get the correct latest time observed", async function () {
+  it("Should get the correct latest time observed from the contract", async function () {
     const tx = await conjure.connect(addr1).updatePrice();
     const {blockNumber  } = await tx.wait();
     const block = await provider.getBlock(blockNumber);
@@ -282,7 +282,7 @@ describe("Conjure Basic Tests", function () {
     expect(lastpricetime).to.be.equal(block.timestamp);
   });
 
-  it("Confirm Decimals", async function () {
+  it("Should return the correct decimals of the Conjure Contract", async function () {
     let decimals = await conjure.decimals()
     expect(decimals).to.be.equal(18);
   });

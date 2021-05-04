@@ -73,7 +73,7 @@ describe("Conjure Pricing Core Tests", function () {
     await mock18dec.deployed();
   })
 
-  it("Revert when call to non existing fallback function is initiated", async function () {
+  it("Revert when a call to non the existing fallback function is initiated via the custom call of Conjure", async function () {
     await expect(conjureFactory.conjureMint(
         [[2],[0],[100],[8]],
         [0x00],
@@ -86,7 +86,7 @@ describe("Conjure Pricing Core Tests", function () {
     )).to.be.revertedWith("Call unsuccessful");
   });
 
-  it("Should get the price median right for a single oracle", async function () {
+  it("Should get the price median right for a single chainlink oracle", async function () {
     const tx = await conjureFactory.conjureMint(
         [[0],[0],[100],[8]],
         [0x00],
@@ -107,7 +107,7 @@ describe("Conjure Pricing Core Tests", function () {
     expect(lastprice).to.be.equal("1500000000000000000000");
   });
 
-  it("Should get the price median right for a 3 oracles", async function () {
+  it("Should get the right median price for 3 custom call oracles", async function () {
     const tx = await conjureFactory.conjureMint(
         [[2,2,2],[0,0,0],[30,30,40],[8,8,8]],
         [0x00, 0x00, 0x00],
@@ -130,7 +130,7 @@ describe("Conjure Pricing Core Tests", function () {
     expect(lastprice).to.be.equal("2000000000000000000000");
  });
 
-  it("Should get the price median right for a 2 oracles", async function () {
+  it("Should get the right median price for 2 custom call oracles", async function () {
     const tx = await conjureFactory.conjureMint(
         [[2,2],[0,0],[30,30],[8,8]],
         [0x00, 0x00],
@@ -153,7 +153,7 @@ describe("Conjure Pricing Core Tests", function () {
     expect(lastprice).to.be.equal("1750000000000000000000");
   });
 
-  it("Should get the price median right for a 2 oracles with maximum decimals (18)", async function () {
+  it("Should get the right median price for 2 mixed oracles with maximum decimals (18)", async function () {
     const tx = await conjureFactory.conjureMint(
         [[0,2],[0,0],[30,30],[18,18]],
         [0x00, 0x00],
@@ -176,7 +176,7 @@ describe("Conjure Pricing Core Tests", function () {
     expect(lastprice).to.be.equal("1500000000000000000000");
   });
 
-  it("Should get the price median right for a 3 oracles", async function () {
+  it("Should get the right median price for 3 mixed oracles", async function () {
     const tx = await conjureFactory.conjureMint(
         [[0,2,0],[0,0,0],[30,30,30],[8,8,18]],
         [0x00, 0x00, 0x00],
@@ -199,7 +199,7 @@ describe("Conjure Pricing Core Tests", function () {
     expect(lastprice).to.be.equal("2000000000000000000000");
   });
 
-  it("Should get the price median right for a 4 oracles", async function () {
+  it("Should get the right median price for 4 mixed oracles", async function () {
     const tx = await conjureFactory.conjureMint(
         [[0,2,0,0],[0,0,0,0],[30,30,30,10],[8,8,18,8]],
         [0x00, 0x00, 0x00, 0x00],
@@ -223,7 +223,7 @@ describe("Conjure Pricing Core Tests", function () {
     expect(lastprice).to.be.equal("2000000000000000000000");
   });
 
-  it("Should get the right avg price for a single basket", async function () {
+  it("Should get the right average price for a single oracle for a basket asset type", async function () {
     const tx = await conjureFactory.conjureMint(
         [[2],[0],[100],[8]],
         [0x00],
@@ -276,7 +276,7 @@ describe("Conjure Pricing Core Tests", function () {
 
   });
 
-  it("Should revert with no oracle data", async function () {
+  it("Should revert with no oracle data provided", async function () {
     await expect(  conjureFactory.conjureMint(
         [[],[],[],[]],
         [],
@@ -290,7 +290,7 @@ describe("Conjure Pricing Core Tests", function () {
 
   });
 
-  it("Should get the price avg right for 3 oracles", async function () {
+  it("Should get the right average price for a 3 chainlink oracle for a basket asset type", async function () {
     const tx = await conjureFactory.conjureMint(
         [[0,0,0],[0,0,0],[30,30,40],[8,8,8]],
         [0x00, 0x00, 0x00],
@@ -314,7 +314,7 @@ describe("Conjure Pricing Core Tests", function () {
     expect(lastprice).to.be.equal("2250000000000000000000");
   });
 
-  it("Should get the price avg right for 3 oracles mixed order", async function () {
+  it("Should get the right average price for a single oracle for a basket asset type --> testing the sort function and providing mixed inputs", async function () {
     const tx = await conjureFactory.conjureMint(
         [[0,0,0],[0,0,0],[30,30,40],[8,8,8]],
         [0x00, 0x00, 0x00],
@@ -338,7 +338,7 @@ describe("Conjure Pricing Core Tests", function () {
     expect(lastprice).to.be.equal("2250000000000000000000");
   });
 
-  it("Should get the price avg right for 3 oracles mixed order 2", async function () {
+  it("Should get the right average price for a single oracle for a basket asset type --> testing the sort function and providing mixed inputs starting high", async function () {
     const tx = await conjureFactory.conjureMint(
         [[0,0,0],[0,0,0],[30,30,40],[8,8,8]],
         [0x00, 0x00, 0x00],
@@ -362,7 +362,7 @@ describe("Conjure Pricing Core Tests", function () {
     expect(lastprice).to.be.equal("2150000000000000000000");
   });
 
-  it("Should get the right avg price for an INVERSE single basket", async function () {
+  it("Should get the right average price for an INVERSE single basket", async function () {
     const tx = await conjureFactory.conjureMint(
         [[2],[0],[100],[8]],
         [0x00],
@@ -396,7 +396,7 @@ describe("Conjure Pricing Core Tests", function () {
     expect(lastprice).to.be.equal("1000000000000000000000");
   });
 
-  it("Should get the right avg price for an INVERSE single basket with decrease", async function () {
+  it("Should get the right average price for an INVERSE single basket with while decreasing price", async function () {
     // set back the inverse mock
     await mockinverse.setState(0);
 
@@ -433,7 +433,7 @@ describe("Conjure Pricing Core Tests", function () {
     expect(lastprice).to.be.equal("2000000000000000000000");
   });
 
-  it("Should get the right avg price for an INVERSE single basket increasing setting value to 0", async function () {
+  it("Should get the right average price for an INVERSE single basket increasing setting value to 0 and closing the asset", async function () {
     // set back the inverse mock
     await mockinverse.setState(0);
 
@@ -491,6 +491,4 @@ describe("Conjure Pricing Core Tests", function () {
 
     await expect(ethercollateral.depositCollateral(owner.address, 1,overrides)).to.be.revertedWith("Asset closed for deposit collateral");
   });
-
-
 });

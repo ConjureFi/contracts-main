@@ -63,7 +63,7 @@ describe("Test Setup", function () {
 
     describe('Test Zero Address()', async () => {
         let conjure, ethercollateral;
-        it('Should show the deployed conjure contracts gas consumption', async () => {
+        it('Should init the Conjure Contracts from the Factory', async () => {
 
             const tx = await conjureFactory.conjureMint(
                 [[0], [0], [100], [8]],
@@ -75,16 +75,13 @@ describe("Test Setup", function () {
                 ["TEST", "SYMBOL"],
                 0
             );
-            const {events, cumulativeGasUsed, gasUsed,} = await tx.wait();
-            console.log(`Cumulative: ${cumulativeGasUsed.toNumber()}`);
-            console.log(`Gas: ${gasUsed.toNumber()}`)
+            const {events} = await tx.wait();
             const [event] = events.filter(e => e.event === "NewConjure");
             conjure = await ethers.getContractAt("Conjure", event.args.conjure);
             ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
         })
 
-
-        it('Should revert if Conjure already inited', async () => {
+        it('Should revert if the Conjure contract already inited', async () => {
 
             await hre.network.provider.request({
                 method: "hardhat_impersonateAccount",
@@ -122,7 +119,7 @@ describe("Test Setup", function () {
             )
         })
 
-        it('Should revert if tried to init the clone contracts with zero address', async () => {
+        it('Should revert if we try to init the clone contracts with the zero address', async () => {
             const tx = await clonemock.getClones();
             const {events} = await tx.wait();
             const [event] = events.filter(e => e.event === "NewConjure");
