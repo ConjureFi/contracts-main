@@ -51,6 +51,30 @@ describe("Conjure Factory Tests", function () {
   })
 
   // basic mints
+  it("Should not be able to deploy the ConjureFactory Contract with zero addresses", async function () {
+    await expect( deploy(
+        'ConjureFactory',
+        zeroaddress,
+        etherCollateralImplementation.address,
+        owner.address
+    )).to.be.revertedWith("No zero address for conjure");
+
+    await expect( deploy(
+        'ConjureFactory',
+        conjureImplementation.address,
+        zeroaddress,
+        owner.address
+    )).to.be.revertedWith("No zero address for etherCollateral");
+
+    await expect( deploy(
+        'ConjureFactory',
+        conjureImplementation.address,
+        etherCollateralImplementation.address,
+        zeroaddress
+    )).to.be.revertedWith("No zero address for conjureRouter");
+  });
+
+  // basic mints
   it("Should be able to mint a new Conjure Contract", async function () {
     // using 0 address for needed addresses we just check if the call works here
     const tx = await conjureFactory.conjureMint(
@@ -71,7 +95,8 @@ describe("Conjure Factory Tests", function () {
     expect(conjureImplementations).to.equal(conjureImplementation.address);
   });
 
-  it("Should be able to change the conjureImplementation address", async function () {
+  it("Should be able to change the conjureImplementation address and check for zero address", async function () {
+    await expect(conjureFactory.newConjureImplementation(zeroaddress)).to.be.revertedWith("No zero address for conjureImplementation_");
     await conjureFactory.newConjureImplementation(addr1.address);
     let conjureImplementations = await conjureFactory.conjureImplementation();
     expect(conjureImplementations).to.equal(addr1.address);
@@ -87,7 +112,8 @@ describe("Conjure Factory Tests", function () {
     expect(etherCollateralImplementations).to.equal(etherCollateralImplementation.address);
   });
 
-  it("Should be able to change the etherCollateralImplementation address", async function () {
+  it("Should be able to change the etherCollateralImplementation address and check for zero address", async function () {
+    await expect(conjureFactory.newEtherCollateralImplementation(zeroaddress)).to.be.revertedWith("No zero address for etherCollateralImplementation_");
     await conjureFactory.newEtherCollateralImplementation(addr1.address);
     let etherCollateralImplementations = await conjureFactory.etherCollateralImplementation();
     expect(etherCollateralImplementations).to.equal(addr1.address);
@@ -103,7 +129,8 @@ describe("Conjure Factory Tests", function () {
     expect(conjureRouter).to.equal(owner.address);
   });
 
-  it("Should be able to change the conjureRouter address", async function () {
+  it("Should be able to change the conjureRouter address and check for zero address", async function () {
+    await expect(conjureFactory.newConjureRouter(zeroaddress)).to.be.revertedWith("No zero address for conjureRouter_");
     await conjureFactory.newConjureRouter(addr1.address);
     let conjureRouter = await conjureFactory.conjureRouter();
     expect(conjureRouter).to.equal(addr1.address);
@@ -119,7 +146,8 @@ describe("Conjure Factory Tests", function () {
     expect(factoryOwner).to.equal(owner.address);
   });
 
-  it("Should be able to change the owners address", async function () {
+  it("Should be able to change the owners address and check if the address is not the zero address", async function () {
+    await expect(conjureFactory.newFactoryOwner(zeroaddress)).to.be.revertedWith("No zero address for newOwner");
     await conjureFactory.newFactoryOwner(addr1.address);
     let factoryOwner = await conjureFactory.factoryOwner();
     expect(factoryOwner).to.equal(addr1.address);
