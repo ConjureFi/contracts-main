@@ -99,12 +99,12 @@ describe("EtherCollateral Tests", function () {
         await mock18dec.deployed();
     })
 
-    it("Should init the contract", async function () {
+    it("Should initialize the contracts", async function () {
         const tx = await conjureFactory.conjureMint(
             [[0], [0], [100], [8]],
             [0x00],
             ["signature1"],
-            [[mock.address],[zeroaddress]],
+            [[mock.address], [zeroaddress]],
             [[1, 0], [100, "120000000000000000000"]],
             [owner.address, mock.address],
             ["NAME", "SYMBOL"],
@@ -117,12 +117,12 @@ describe("EtherCollateral Tests", function () {
         ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
     });
 
-    it("Should be able to find the generated COLLATERAL CONTRACT", async function () {
+    it("Should be able to find the generated COLLATERAL CONTRACT and check the collateralizationRatio", async function () {
         let ratio = await ethercollateral.collateralizationRatio();
         expect(ratio).to.equal("120000000000000000000");
     });
 
-    it("Should not be able to open a loan with too low collateralization ratio", async function () {
+    it("Should not be able to open a loan with a collateralization ratio which is too low", async function () {
         // send 1 eth
         let overrides = {
             //value: "49000000000000000"
@@ -133,7 +133,7 @@ describe("EtherCollateral Tests", function () {
         await expect(ethercollateral.openLoan("1000000000000000000", overrides)).to.be.revertedWith("Not enough ETH to create this loan. Please see the minLoanCollateralSize");
     });
 
-    it("Should not to increase the minting fee and also not to set it too high", async function () {
+    it("Should not be able to increase the minting fee and also not be able to set it too high", async function () {
         await expect(ethercollateral.setIssueFeeRate(200)).to.be.revertedWith("Fee can only be lowered");
     });
 
@@ -148,7 +148,7 @@ describe("EtherCollateral Tests", function () {
         expect(fee).to.equal(0);
     });
 
-    it("Should be able to open a loan", async function () {
+    it("Should be able to open a loan and check for the right parameters set", async function () {
         // get amount needed
         const amountToBorrow = "1000000000000000000";
 
@@ -174,7 +174,7 @@ describe("EtherCollateral Tests", function () {
 
     });
 
-    it("check loan Properties", async function () {
+    it("Should have the right loan properties set (cratio, mintingfee, open loans in the system)", async function () {
         const loan = await (ethercollateral.getLoan(owner.address, 1));
         const ratio = await ethercollateral.getLoanCollateralRatio(owner.address, 1);
         const collateralizationRatio = await ethercollateral.collateralizationRatio();
@@ -194,7 +194,7 @@ describe("EtherCollateral Tests", function () {
         expect(openloans.length).to.be.equal(1);
     });
 
-    it("should be able to close a loan", async function () {
+    it("Should be able to close a loan and check the closing time", async function () {
         const tx = await (ethercollateral.closeLoan(1));
         const {blockNumber} = await tx.wait();
         const block = await provider.getBlock(blockNumber);
@@ -204,7 +204,7 @@ describe("EtherCollateral Tests", function () {
         expect(loan.timeClosed).to.be.equal(block.timestamp);
     });
 
-    it("should not be able to close a loan with insufficient funds", async function () {
+    it("Should not be able to close a loan with insufficient funds and check if the loan is still open", async function () {
         // get amount needed
         const amountToBorrow = "1000000000000000000";
 
@@ -224,7 +224,7 @@ describe("EtherCollateral Tests", function () {
         expect(loan.timeClosed).to.equal(0);
     });
 
-    it("should be able to repay a loan", async function () {
+    it("Should be able to repay a loan and check the cratio afterwards", async function () {
         // get amount needed
         const amountToBorrow = "1000000000000000000";
 
@@ -245,7 +245,7 @@ describe("EtherCollateral Tests", function () {
         expect(ratioafter).to.be.equal("4000000000000000000")
     });
 
-    it("should be able to deposit collateral", async function () {
+    it("Should be able to deposit collateral into a loan and check the C-Ratio after", async function () {
         // get amount needed
         const amountToBorrow = "1000000000000000000";
 
@@ -272,7 +272,7 @@ describe("EtherCollateral Tests", function () {
         expect(ratioafter).to.be.equal("4000000000000000000")
     });
 
-    it("should be able to withdraw collateral", async function () {
+    it("Should be able to withdraw collateral from an open loan and check the C-Ratio afterwards", async function () {
         // get amount needed
         const amountToBorrow = "1000000000000000000";
 
@@ -306,7 +306,7 @@ describe("EtherCollateral Tests", function () {
      * P = liquidation penalty
      * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
      * */
-    it("should be able to return the right liquidation amount", async function () {
+    it("Should be able to return the right liquidation amount by calling the calculateAmountToLiquidate function and check against custom calculation", async function () {
         // 120% c-ratio should be able to get fixed cause we should have it at 150% at creation time
         let loanvalue = BigNumber.from("1000000000000000000")
         let collateralvalue = BigNumber.from("1200000000000000000")
@@ -329,7 +329,7 @@ describe("EtherCollateral Tests", function () {
         expect(diff).to.be.lessThan(errorDelta);
     });
 
-    it("should return 0 for correct minimum c ratio", async function () {
+    it("Should return 0 for correct minimum c ratio of the calculateAmountToLiquidate function", async function () {
         // 120% c-ratio should be able to get fixed cause we should have it at 150% at creation time
         let loanvalue = BigNumber.from("1000000000000000000")
         let collateralvalue = BigNumber.from("1200000000000000000")
@@ -340,7 +340,7 @@ describe("EtherCollateral Tests", function () {
 
     });
 
-    it("should not fix a loan with c ratio below 110", async function () {
+    it("Should not fix a loan with c ratio below 110% by calling calculateAmountToLiquidate", async function () {
         // 120% c-ratio should be able to get fixed cause we should have it at 150% at creation time
         let loanvalue = BigNumber.from("1000000000000000000")
         let collateralvalue = BigNumber.from("1000000000000000000")
@@ -359,7 +359,7 @@ describe("EtherCollateral Tests", function () {
         }
     });
 
-    it("should not be able to call liquidate with no funds", async function () {
+    it("Should not be able to call liquidateLoan with no funds of the synthetic asset", async function () {
         await expect(ethercollateral.connect(addr1).liquidateLoan(owner.address, 5, "1000000000000000000")).to.be.revertedWith("Not enough balance");
     });
 
@@ -378,16 +378,16 @@ describe("EtherCollateral Tests", function () {
         await expect(ethercollateral.connect(addr1).liquidateLoan(owner.address, 5, "1000000000000000000")).to.be.revertedWith("Collateral ratio above liquidation ratio");
     });
 
-    it("Should be able to call get contract info", async function () {
+    it("Should be able to call get contract info (just test call no details here)", async function () {
         await ethercollateral.connect(addr1).getContractInfo();
     });
 
-    it("Should be able to distribute the minting fee", async function () {
+    it("Should be able to distribute the minting fee amongst the router and the Conjure contract. Check the balances before and afterwards", async function () {
         const tx = await conjureFactory.conjureMint(
             [[0], [0], [100], [8]],
             [0x00],
             ["signature1"],
-            [[mock.address],[zeroaddress]],
+            [[mock.address], [zeroaddress]],
             [[1, 0], [100, "120000000000000000000"]],
             [owner.address, mock.address],
             ["NAME", "SYMBOL"],
@@ -425,12 +425,12 @@ describe("EtherCollateral Tests", function () {
         expect(contractBalanceAfter).to.be.equal(contractBalanceBefore.add(ethvalue.mul(100).div(100 + 10000).sub(routerfee)))
     });
 
-    it("Should be reverted cause setup with too high minting fee", async function () {
+    it("Should revert on conjureMint call cause setup was called with too high minting fee", async function () {
         await expect(conjureFactory.conjureMint(
             [[0], [0], [100], [8]],
             [0x00],
             ["signature1"],
-            [[mock.address],[zeroaddress]],
+            [[mock.address], [zeroaddress]],
             [[1, 0], [251, "120000000000000000000"]],
             [owner.address, mock.address],
             ["NAME", "SYMBOL"],
@@ -438,11 +438,11 @@ describe("EtherCollateral Tests", function () {
         )).to.be.revertedWith("Minting fee too high");
     });
 
-    it("should be reverted cause call from non owner", async function () {
+    it("Should revert on setIssueFeeRate call cause call came from a non owner address", async function () {
         await expect(ethercollateral.connect(addr1).setIssueFeeRate("50")).to.be.revertedWith("Only the contract owner may perform this action");
     });
 
-    it("should get actual synth loans", async function () {
+    it("Should be able to close a loan and then check the getOpenLoanIDsByAccount function returns the right open loans of an account", async function () {
 
         await ethercollateral.closeLoan(1);
         let loans = await ethercollateral.getOpenLoanIDsByAccount(owner.address)
@@ -450,7 +450,7 @@ describe("EtherCollateral Tests", function () {
         expect(loans.length).to.be.equal(0);
     });
 
-    it("should not be able to open a loan exceeding max borrowing power", async function () {
+    it("Should not be able to open a loan exceeding max borrowing power by providing not enough ETH as collateral", async function () {
         // get amount needed
         const amountToBorrow = "1100000000000000000";
 
@@ -462,12 +462,12 @@ describe("EtherCollateral Tests", function () {
         await expect(ethercollateral.connect(addr1).openLoan(amountToBorrow, overrides)).to.be.revertedWith("Loan amount exceeds max borrowing power");
     });
 
-    it("should not be able to close a loan that doesnt exist or which is already closed", async function () {
+    it("Should not be able to close a loan that doesnt exist or which is already closed", async function () {
         await expect(ethercollateral.closeLoan(99)).to.be.revertedWith("Loan does not exist");
         await expect(ethercollateral.closeLoan(1)).to.be.revertedWith("Loan already closed");
     });
 
-    it("should not be able to open a loan with too less funds sent to cover fee + collateral", async function () {
+    it("Should not be able to open a loan with too less funds sent to cover fee + collateral", async function () {
         // get amount needed
         const amountToBorrow = "999999999999999999";
 
@@ -478,12 +478,12 @@ describe("EtherCollateral Tests", function () {
         await expect(ethercollateral.openLoan(amountToBorrow, overrides)).to.be.revertedWith("Not enough funds sent to cover fee and collateral");
     });
 
-    it("Should not be able to repay a loan with not enough funds", async function () {
+    it("Should not be able to repay a loan with not enough funds of the synthetic asset in the accounts balance", async function () {
         const tx = await conjureFactory.conjureMint(
             [[0], [0], [100], [8]],
             [0x00],
             ["signature1"],
-            [[mock.address],[zeroaddress]],
+            [[mock.address], [zeroaddress]],
             [[1, 0], [100, "120000000000000000000"]],
             [owner.address, mock.address],
             ["NAME", "SYMBOL"],
@@ -511,12 +511,12 @@ describe("EtherCollateral Tests", function () {
         await expect(ethercollateral.repayLoan(owner.address, 1, "1")).to.be.revertedWith("Not enough balance")
     });
 
-    it("Should not be able to have more than 50 loans in the system per user", async function () {
+    it("Should not be able to have more than 50 open loans in the system per user", async function () {
         const tx = await conjureFactory.conjureMint(
             [[0], [0], [100], [8]],
             [0x00],
             ["signature1"],
-            [[mock.address],[zeroaddress]],
+            [[mock.address], [zeroaddress]],
             [[1, 0], [100, "120000000000000000000"]],
             [owner.address, mock.address],
             ["NAME", "SYMBOL"],
@@ -542,12 +542,12 @@ describe("EtherCollateral Tests", function () {
         await expect(ethercollateral.openLoan(amountToBorrow, overrides)).to.be.revertedWith("Each account is limited to 50 loans")
     });
 
-    it("Basic ERC20 Tests for Conjure asset", async function () {
+    it("Basic ERC20 Tests for Conjure asset testing calls to and from zero addresses", async function () {
         const tx = await conjureFactory.conjureMint(
             [[0], [0], [100], [8]],
             [0x00],
             ["signature1"],
-            [[mock.address],[zeroaddress]],
+            [[mock.address], [zeroaddress]],
             [[1, 0], [100, "120000000000000000000"]],
             [owner.address, mock.address],
             ["NAME", "SYMBOL"],
@@ -598,12 +598,12 @@ describe("EtherCollateral Tests", function () {
 
     });
 
-    it("Should be able to change the owner", async function () {
+    it("Should be able to change the owner of the EtherCollateral Contract and also check if the function is only callable by the current owner", async function () {
         const tx = await conjureFactory.conjureMint(
             [[0], [0], [100], [8]],
             [0x00],
             ["signature1"],
-            [[mock.address],[zeroaddress]],
+            [[mock.address], [zeroaddress]],
             [[1, 0], [100, "120000000000000000000"]],
             [owner.address, mock.address],
             ["NAME", "SYMBOL"],

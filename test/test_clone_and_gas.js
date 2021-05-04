@@ -89,7 +89,7 @@ describe("Test Conjure Factory Deploy Functions (Gas)", function () {
 
         })
 
-        it('Check initialize Conjure', async () => {
+        it('Check initialize Conjure works propoerly', async () => {
             await expect(conjureImplementation.initialize(
                 ["NAME", "SYMBOL"],
                 [],
@@ -98,7 +98,7 @@ describe("Test Conjure Factory Deploy Functions (Gas)", function () {
             )).to.be.revertedWith("already initialized");
         })
 
-        it('Check initialize EtherCollateral', async () => {
+        it('Check initialize EtherCollateral works properly', async () => {
             await expect(etherCollateralImplementation.initialize(
                 owner.address,
                 owner.address,
