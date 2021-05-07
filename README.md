@@ -14,11 +14,12 @@ You can find the rinkeby version of the Conjure Dapp here: [https://rinkeby.conj
 
 ## Bug Bounty
 A bug bounty for $20,000 during the first week for the soft launch, and $50,000 after will be rewarded for any critical vulnerabilities found within the Conjure and EtherCollateral contracts within this repo. The scope is only within these contracts and assumes that the oracles provided to an asset are reliable, secure and fully functional, only the contracts are within scope for the bounty. Smaller rewards are available for information-major vulnerabilities as well as other contracts, however these are subject to the security teams discretion. For any found vulnerabilities the contacts are:
+
 Email
 contact@conjure.finance
+
 Discord (case sens)
-jimmix
-#3056
+jimmix#3056
 PR0#9619
 
 
