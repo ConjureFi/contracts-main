@@ -45,8 +45,8 @@ contract Conjure is IERC20, ReentrancyGuard {
     // the type of the arb asset (single asset, arb asset)
     // 0... single asset     (uses median price)
     // 1... basket asset     (uses weighted average price)
-    // 2... index asset      (uses ndx uniSwap oracle to get supply and price and calculates supply * price / divisor)
-    // 3 .. sqrt index asset (uses ndx uniSwap oracle to get supply and price and calculates sqrt(supply * price) / divisor)
+    // 2... index asset      (uses token address and oracle to get supply and price and calculates supply * price / divisor)
+    // 3 .. sqrt index asset (uses token address and oracle to get supply and price and calculates sqrt(supply * price) / divisor)
     uint256 public _assetType;
 
     // the address of the collateral contract factory
@@ -102,8 +102,6 @@ contract Conjure is IERC20, ReentrancyGuard {
     uint256 private constant CHAINLINK_RETURN_DECIMALS = 8;
 
     // the eth usd price feed chainLink oracle address
-    //chainLink eth/usd mainnet: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
-    //chainLink eth/usd rinkeby: 0x8A753747A1Fa494EC906cE90E9f37563A8AF630e
     address public ethUsdChainLinkOracle;
 
     // ========== EVENTS ==========
