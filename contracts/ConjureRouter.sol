@@ -14,6 +14,12 @@ contract ConjureRouter {
     event FeeDistribution(address treasury, address stakingrewards, uint256 amount);
     // event for new threshold
     event NewThreshold(uint256 value);
+    // event for new owner
+    event NewOwner(address newOwner);
+    // event for new treasury
+    event NewTreasury(address newTreasury);
+    // event for new staking rewards
+    event NewStakingRewards(address newStakingRewards);
 
     IStakingRewards public stakingRewards;
     address payable public treasury;
@@ -54,38 +60,25 @@ contract ConjureRouter {
         distribute();
     }
 
-    /**
-    * fallback function for collection funds
-    * only executes the distribution logic if the contract balance is more than 0.1 ETH
-    */
-    fallback() external payable {
-        distribute();
-    }
-
-    /**
-    * fallback function for collection funds
-    * only executes the distribution logic if the contract balance is more than 0.1 ETH
-    */
-    receive() external payable {
-        distribute();
-    }
-
     function newStakingrewards(IStakingRewards newRewards) external {
         require(msg.sender == owner, "Only owner");
         require(address(newRewards) != address(0), "not zero address");
         stakingRewards = newRewards;
+        emit NewStakingRewards(address(stakingRewards));
     }
 
     function newTreasury(address payable newTreasuryAddress) external {
         require(msg.sender == owner, "Only owner");
         require(newTreasuryAddress != address(0), "not zero address");
         treasury = newTreasuryAddress;
+        emit NewTreasury(treasury);
     }
 
     function setNewOwner(address newOwner) external {
         require(msg.sender == owner, "Only owner");
         require(newOwner != address(0), "not zero address");
         owner = newOwner;
+        emit NewOwner(owner);
     }
 
     function setNewThreshold(uint256 newthreshold) external {

@@ -34,16 +34,16 @@ contract EtherCollateral is ReentrancyGuard {
     uint256 public issueFeeRate;
 
     // Minimum amount of ETH to create loan preventing griefing and gas consumption. Min 0.05 ETH
-    uint256 public constant minLoanCollateralSize = 10 ** 18 / 20;
+    uint256 public constant MIN_LOAN_COLLATERAL_SIZE = 10 ** 18 / 20;
 
     // Maximum number of loans an account can create
-    uint256 public constant accountLoanLimit = 50;
+    uint256 public constant ACCOUNT_LOAN_LIMITS = 50;
 
     // Liquidation ratio when loans can be liquidated
     uint256 public liquidationRatio;
 
     // Liquidation penalty when loans are liquidated. default 10%
-    uint256 public constant liquidationPenalty = 10 ** 18 / 10;
+    uint256 public constant LIQUIDATION_PENALTY = 10 ** 18 / 10;
 
     // ========== STATE VARIABLES ==========
 
@@ -241,7 +241,7 @@ contract EtherCollateral is ReentrancyGuard {
         _collateralizationRatio = collateralizationRatio;
         _issuanceRatio = issuanceRatio();
         _issueFeeRate = issueFeeRate;
-        _minLoanCollateralSize = minLoanCollateralSize;
+        _minLoanCollateralSize = MIN_LOAN_COLLATERAL_SIZE;
         _totalIssuedSynths = totalIssuedSynths;
         _totalLoansCreated = totalLoansCreated;
         _totalOpenLoanCount = totalOpenLoanCount;
@@ -319,7 +319,7 @@ contract EtherCollateral is ReentrancyGuard {
         uint unit = SafeDecimalMath.unit();
 
         uint dividend = debtBalance.sub(collateral.divideDecimal(liquidationRatio));
-        uint divisor = unit.sub(unit.add(liquidationPenalty).divideDecimal(liquidationRatio));
+        uint divisor = unit.sub(unit.add(LIQUIDATION_PENALTY).divideDecimal(liquidationRatio));
 
         return dividend.divideDecimal(divisor);
     }
@@ -438,14 +438,14 @@ contract EtherCollateral is ReentrancyGuard {
     returns (uint256 loanID) {
         // asset must be open
         require(!assetClosed, "Asset closed");
-        // Require ETH sent to be greater than minLoanCollateralSize
+        // Require ETH sent to be greater than MIN_LOAN_COLLATERAL_SIZE
         require(
-            msg.value >= minLoanCollateralSize,
-            "Not enough ETH to create this loan. Please see the minLoanCollateralSize"
+            msg.value >= MIN_LOAN_COLLATERAL_SIZE,
+            "Not enough ETH to create this loan. Please see the MIN_LOAN_COLLATERAL_SIZE"
         );
 
-        // Each account is limited to creating 50 (accountLoanLimit) loans
-        require(accountsSynthLoans[msg.sender].length < accountLoanLimit, "Each account is limited to 50 loans");
+        // Each account is limited to creating 50 (ACCOUNT_LOAN_LIMITS) loans
+        require(accountsSynthLoans[msg.sender].length < ACCOUNT_LOAN_LIMITS, "Each account is limited to 50 loans");
 
         // Calculate issuance amount based on issuance ratio
         syntharb().updatePrice();
@@ -653,7 +653,7 @@ contract EtherCollateral is ReentrancyGuard {
 
         // Add penalty in ETH
         uint256 totalCollateralLiquidated = collateralRedeemed.multiplyDecimal(
-            SafeDecimalMath.unit().add(liquidationPenalty)
+            SafeDecimalMath.unit().add(LIQUIDATION_PENALTY)
         );
 
         // update remaining loanAmount less amount paid and update accrued interests less interest paid

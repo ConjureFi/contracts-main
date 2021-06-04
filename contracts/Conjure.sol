@@ -110,6 +110,9 @@ contract Conjure is IERC20, ReentrancyGuard {
     event Burned(address indexed account, uint256 value);
     event AssetTypeSet(uint256 value);
     event IndexDivisorSet(uint256 value);
+    event PriceUpdated(uint256 value);
+    event InverseSet(bool value);
+    event NumOraclesSet(uint256 value);
 
     // only owner modifier
     modifier onlyOwner {
@@ -155,6 +158,8 @@ contract Conjure is IERC20, ReentrancyGuard {
 
         // mint new EtherCollateral contract
         _collateralContract = collateralContract;
+
+        emit NewOwner(_owner);
     }
 
     /**
@@ -177,7 +182,7 @@ contract Conjure is IERC20, ReentrancyGuard {
         bytes[] memory callData_
     ) external {
         require(msg.sender == _factoryContract, "can only be called by factory contract");
-        require(_inited == false, "Contract already inited");
+        require(!_inited, "Contract already inited");
         require(divisorAssetType[0] != 0, "Divisor should not be 0");
 
         _assetType = divisorAssetType[1];
@@ -187,6 +192,8 @@ contract Conjure is IERC20, ReentrancyGuard {
         
         emit AssetTypeSet(_assetType);
         emit IndexDivisorSet(_indexdivisor);
+        emit InverseSet(_inverse);
+        emit NumOraclesSet(_numoracles);
 
         uint256 weightCheck;
 
@@ -211,8 +218,6 @@ contract Conjure is IERC20, ReentrancyGuard {
         if (_assetType == 1) {
             require(weightCheck == 100, "Weights not 100");
         }
-        
-        
 
         updatePrice();
         _deploymentPrice = getLatestPrice();
@@ -444,6 +449,8 @@ contract Conjure is IERC20, ReentrancyGuard {
 
         _latestobservedprice = returnPrice;
         _latestobservedtime = block.timestamp;
+
+        emit PriceUpdated(_latestobservedprice);
 
         // if price reaches 0 we close the collateral contract and no more loans can be opened
         if (returnPrice <= 0) {

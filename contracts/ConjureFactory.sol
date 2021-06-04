@@ -12,6 +12,9 @@ contract ConjureFactory {
 
     event NewConjure(address conjure, address etherCollateral);
     event FactoryOwnerChanged(address newowner);
+    event NewEtherCollateralImplementation(address newEtherCollateralImplementation);
+    event NewConjureRouter(address newConjureRouter);
+    event NewConjureImplementation(address newConjureImplementation);
 
     address payable public factoryOwner;
     address public conjureImplementation;
@@ -32,6 +35,11 @@ contract ConjureFactory {
         conjureImplementation = _conjureImplementation;
         etherCollateralImplementation = _etherCollateralImplementation;
         conjureRouter = _conjureRouter;
+
+        emit FactoryOwnerChanged(factoryOwner);
+        emit NewConjureImplementation(conjureImplementation);
+        emit NewEtherCollateralImplementation(etherCollateralImplementation);
+        emit NewConjureRouter(conjureRouter);
     }
 
     /**
@@ -117,6 +125,7 @@ contract ConjureFactory {
         require(conjureImplementation_ != address(0), "No zero address for conjureImplementation_");
         
         conjureImplementation = conjureImplementation_;
+        emit NewConjureImplementation(conjureImplementation);
     }
 
     /**
@@ -129,6 +138,7 @@ contract ConjureFactory {
         require(etherCollateralImplementation_ != address(0), "No zero address for etherCollateralImplementation_");
 
         etherCollateralImplementation = etherCollateralImplementation_;
+        emit NewEtherCollateralImplementation(etherCollateralImplementation);
     }
 
     /**
@@ -141,6 +151,7 @@ contract ConjureFactory {
         require(conjureRouter_ != address(0), "No zero address for conjureRouter_");
         
         conjureRouter = conjureRouter_;
+        emit NewConjureRouter(conjureRouter);
     }
 
     /**
