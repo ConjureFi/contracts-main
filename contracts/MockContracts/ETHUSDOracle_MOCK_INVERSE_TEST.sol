@@ -30,5 +30,11 @@ contract ETHUSDOracle_MOCK_INVERSE_TEST {
         if (state == 3) {
             answer = 300000000000;
         }
+        if (state == 4) {
+            answer = 0;
+        }
+        if (state == 5) {
+            answer = 250000000000;
+        }
     }
 }

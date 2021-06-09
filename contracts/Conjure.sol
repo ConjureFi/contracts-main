@@ -104,6 +104,15 @@ contract Conjure is IERC20, ReentrancyGuard {
     // the eth usd price feed chainLink oracle address
     address public ethUsdChainLinkOracle;
 
+    // lower boundary for inverse assets (50% of the deployment price)
+    uint256 public inverseLowerCap;
+
+    // upper boundary for inverse assets (deployment price + 50%)
+    uint256 public inverseMaxCap;
+
+    // indicates if price is frozen. No more price updates after this
+    bool public priceFrozen;
+
     // ========== EVENTS ==========
     event NewOwner(address newOwner);
     event Issued(address indexed account, uint256 value);
@@ -113,6 +122,7 @@ contract Conjure is IERC20, ReentrancyGuard {
     event PriceUpdated(uint256 value);
     event InverseSet(bool value);
     event NumOraclesSet(uint256 value);
+    event PriceFrozen(uint256 price);
 
     // only owner modifier
     modifier onlyOwner {
@@ -221,6 +231,13 @@ contract Conjure is IERC20, ReentrancyGuard {
 
         updatePrice();
         _deploymentPrice = getLatestPrice();
+
+        // for inverse assets set boundaries
+        if (_inverse) {
+            inverseLowerCap = _deploymentPrice.div(2);
+            inverseMaxCap = _deploymentPrice.add(_deploymentPrice.div(2));
+        }
+
         _inited = true;
     }
 
@@ -434,16 +451,31 @@ contract Conjure is IERC20, ReentrancyGuard {
      * @dev gets the latest price of the synth in USD by calculation and write the checkpoints for view functions
     */
     function updatePrice() public {
+        require(!priceFrozen, "Price is frozen");
+
         uint256 returnPrice = updateInternalPrice();
+        bool freezeAsset;
 
         // if it is an inverse asset we do price = _deploymentPrice - (current price - _deploymentPrice)
         // --> 2 * deployment price - current price
         // but only if the asset is inited otherwise we return the normal price calculation
+        // freeze the asset if maximum or minimum boundary is breached
         if (_inverse && _inited) {
             if (_deploymentPrice.mul(2) <= returnPrice) {
-                returnPrice = 0;
+                returnPrice = inverseLowerCap;
+                freezeAsset = true;
             } else {
                 returnPrice = _deploymentPrice.mul(2).sub(returnPrice);
+
+                if (returnPrice >= inverseMaxCap) {
+                    returnPrice = inverseMaxCap;
+                    freezeAsset = true;
+                }
+
+                if (returnPrice <= inverseLowerCap) {
+                    returnPrice = inverseLowerCap;
+                    freezeAsset = true;
+                }
             }
         }
 
@@ -453,8 +485,10 @@ contract Conjure is IERC20, ReentrancyGuard {
         emit PriceUpdated(_latestobservedprice);
 
         // if price reaches 0 we close the collateral contract and no more loans can be opened
-        if (returnPrice <= 0) {
+        if ((returnPrice <= 0) || (freezeAsset)) {
             IEtherCollateral(_collateralContract).setAssetClosed();
+            priceFrozen = true;
+            emit PriceFrozen(returnPrice);
         }
     }
 
