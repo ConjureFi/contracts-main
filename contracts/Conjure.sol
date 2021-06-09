@@ -104,11 +104,8 @@ contract Conjure is IERC20, ReentrancyGuard {
     // the eth usd price feed chainLink oracle address
     address public ethUsdChainLinkOracle;
 
-    // lower boundary for inverse assets (50% of the deployment price)
+    // lower boundary for inverse assets (10% of deployment price)
     uint256 public inverseLowerCap;
-
-    // upper boundary for inverse assets (deployment price + 50%)
-    uint256 public inverseMaxCap;
 
     // indicates if price is frozen. No more price updates after this
     bool public priceFrozen;
@@ -234,8 +231,7 @@ contract Conjure is IERC20, ReentrancyGuard {
 
         // for inverse assets set boundaries
         if (_inverse) {
-            inverseLowerCap = _deploymentPrice.div(2);
-            inverseMaxCap = _deploymentPrice.add(_deploymentPrice.div(2));
+            inverseLowerCap = _deploymentPrice.div(10);
         }
 
         _inited = true;
@@ -459,22 +455,18 @@ contract Conjure is IERC20, ReentrancyGuard {
         // if it is an inverse asset we do price = _deploymentPrice - (current price - _deploymentPrice)
         // --> 2 * deployment price - current price
         // but only if the asset is inited otherwise we return the normal price calculation
-        // freeze the asset if maximum or minimum boundary is breached
+        // freeze the asset if maximum boundary is breached
         if (_inverse && _inited) {
             if (_deploymentPrice.mul(2) <= returnPrice) {
-                returnPrice = inverseLowerCap;
+                returnPrice = 0;
                 freezeAsset = true;
             } else {
-                returnPrice = _deploymentPrice.mul(2).sub(returnPrice);
-
-                if (returnPrice >= inverseMaxCap) {
-                    returnPrice = inverseMaxCap;
-                    freezeAsset = true;
-                }
 
                 if (returnPrice <= inverseLowerCap) {
-                    returnPrice = inverseLowerCap;
+                    returnPrice = _deploymentPrice.mul(2).sub(inverseLowerCap);
                     freezeAsset = true;
+                } else {
+                    returnPrice = _deploymentPrice.mul(2).sub(returnPrice);
                 }
             }
         }
