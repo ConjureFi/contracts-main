@@ -130,7 +130,7 @@ describe("EtherCollateral Tests", function () {
         };
 
         // should get loan for 1 arb asset
-        await expect(ethercollateral.openLoan("1000000000000000000", overrides)).to.be.revertedWith("Not enough ETH to create this loan. Please see the minLoanCollateralSize");
+        await expect(ethercollateral.openLoan("1000000000000000000", overrides)).to.be.revertedWith("Not enough ETH to create this loan. Please see the MIN_LOAN_COLLATERAL_SIZE");
     });
 
     it("Should not be able to increase the minting fee and also not be able to set it too high", async function () {
