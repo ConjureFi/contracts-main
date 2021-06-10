@@ -36,5 +36,8 @@ contract ETHUSDOracle_MOCK_INVERSE_TEST {
         if (state == 5) {
             answer = 250000000000;
         }
+        if (state == 6) {
+            answer = 290000000000;
+        }
     }
 }
