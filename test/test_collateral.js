@@ -138,7 +138,7 @@ describe("EtherCollateral Tests", function () {
     });
 
     it("Should not be able to call asset closed", async function () {
-        await expect(ethercollateral.setAssetClosed()).to.be.revertedWith("Only Conjure contract can call");
+        await expect(ethercollateral.setAssetClosed(true)).to.be.revertedWith("Only Conjure contract can call");
     });
 
     it("Should be able to lower the minting fee", async function () {

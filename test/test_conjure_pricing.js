@@ -468,7 +468,7 @@ describe("Conjure Pricing Core Tests", function () {
     expect(inverseLowerCap).to.be.equal(deplprice.div(10))
 
     // check collateral if asset is closed
-    let opencheck = await ethercollateral.assetClosed();
+    let opencheck = await ethercollateral.getAssetClosed();
     expect(opencheck).to.be.equal(false);
 
     // now set the inverse asset to increase the price
@@ -480,10 +480,10 @@ describe("Conjure Pricing Core Tests", function () {
     lastprice = await conjure.getLatestPrice()
 
     // expect the price to be 1500 * 2 - 3000
-    expect(lastprice).to.be.equal(inverseLowerCap);
+    expect(lastprice).to.be.equal(0);
 
     // asset should now be closed
-    opencheck = await ethercollateral.assetClosed()
+    opencheck = await ethercollateral.getAssetClosed()
     expect(opencheck).to.be.equal(true);
 
     // should not be able to open a new loan now
@@ -499,6 +499,17 @@ describe("Conjure Pricing Core Tests", function () {
     await expect(ethercollateral.openLoan(amountToBorrow,overrides)).to.be.revertedWith("Asset closed");
 
     await expect(ethercollateral.depositCollateral(owner.address, 1,overrides)).to.be.revertedWith("Asset closed for deposit collateral");
+
+    // back to normal
+    await mockinverse.setState(0);
+
+    // call price update on the conjure asset
+    conjure.updatePrice();
+
+    // asset should now be opened
+    opencheck = await ethercollateral.getAssetClosed()
+    expect(opencheck).to.be.equal(false);
+
   });
 
 
@@ -531,7 +542,7 @@ describe("Conjure Pricing Core Tests", function () {
     expect(inverseLowerCap).to.be.equal(deplprice.div(10))
 
     // check collateral if asset is closed
-    let opencheck = await ethercollateral.assetClosed();
+    let opencheck = await ethercollateral.getAssetClosed();
     expect(opencheck).to.be.equal(false);
 
     // now set the inverse asset to increase the price
@@ -546,7 +557,79 @@ describe("Conjure Pricing Core Tests", function () {
     expect(lastprice).to.be.equal(deplprice.mul(2).sub(0));
 
     // asset should now be closed
-    opencheck = await ethercollateral.assetClosed()
+    opencheck = await ethercollateral.getAssetClosed()
+    expect(opencheck).to.be.equal(false);
+  });
+
+  it("Should get the right average price for an INVERSE single basket with inverse checking if min threshold gets triggered correctly", async function () {
+    // set back the inverse mock
+    await mockinverse.setState(0);
+
+    const tx = await conjureFactory.conjureMint(
+        [[2],[0],[100],[8]],
+        [0x00],
+        ["latestAnswer()"],
+        [[mockinverse.address],[zeroaddress]],
+        [[1,1], [100,"120000000000000000000"]],
+        [owner.address,mock.address],
+        ["NAME", "SYMBOL"],
+        true
+    );
+
+    const {events} = await tx.wait();
+    const [event] = events.filter(e => e.event === "NewConjure");
+    conjure = await ethers.getContractAt("Conjure", event.args.conjure);
+    ethercollateral = await ethers.getContractAt("EtherCollateral", event.args.etherCollateral);
+
+    let lastprice = await conjure.getLatestPrice()
+    let deplprice = await conjure._deploymentPrice()
+    let inverseLowerCap = await conjure.inverseLowerCap()
+
+    expect(lastprice).to.be.equal("1500000000000000000000");
+    expect(deplprice).to.be.equal("1500000000000000000000");
+    expect(inverseLowerCap).to.be.equal(deplprice.div(10))
+
+    // check collateral if asset is closed
+    let opencheck = await ethercollateral.getAssetClosed();
+    expect(opencheck).to.be.equal(false);
+
+    // now set the inverse asset to increase the price
+    await mockinverse.setState(6);
+
+    // call price update on the conjure asset
+    conjure.updatePrice();
+
+    lastprice = await conjure.getLatestPrice()
+
+    // expect the price to be 1500 * 2 - 2900 is 100
+    expect(lastprice).to.be.equal("100000000000000000000");
+
+    // asset should now be closed
+    opencheck = await ethercollateral.getAssetClosed()
+    expect(opencheck).to.be.equal(true);
+
+    // should not be able to open a new loan now
+    // get amount needed
+    const amountToBorrow = "1000000000000000000";
+
+    // send ether
+    let overrides = {
+      value: "1600000000000000000"
+    };
+
+    // should get loan for 1 arb asset
+    await expect(ethercollateral.openLoan(amountToBorrow,overrides)).to.be.revertedWith("Asset closed");
+
+    await expect(ethercollateral.depositCollateral(owner.address, 1,overrides)).to.be.revertedWith("Asset closed for deposit collateral");
+
+    // back to normal
+    await mockinverse.setState(0);
+
+    // call price update on the conjure asset
+    conjure.updatePrice();
+
+    // asset should now be opened
+    opencheck = await ethercollateral.getAssetClosed()
     expect(opencheck).to.be.equal(false);
   });
 

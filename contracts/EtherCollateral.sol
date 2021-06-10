@@ -88,7 +88,7 @@ contract EtherCollateral is ReentrancyGuard {
 
     // bool indicating if the asset is closed (no more opening loans and deposits)
     // this is set to true if the asset price reaches 0
-    bool public assetClosed;
+    bool internal assetClosed;
 
     // address of the owner
     address public owner;
@@ -110,7 +110,7 @@ contract EtherCollateral is ReentrancyGuard {
     event CollateralDeposited(address indexed account, uint256 loanID, uint256 collateralAmount, uint256 collateralAfter);
     event CollateralWithdrawn(address indexed account, uint256 loanID, uint256 amountWithdrawn, uint256 collateralAfter);
     event LoanRepaid(address indexed account, uint256 loanID, uint256 repaidAmount, uint256 newLoanAmount);
-    event AssetClosed();
+    event AssetClosed(bool status);
     event NewOwner(address newOwner);
 
     constructor() {
@@ -205,10 +205,17 @@ contract EtherCollateral is ReentrancyGuard {
      * Called by the Conjure contract if the asset price reaches 0.
      *
     */
-    function setAssetClosed() external {
+    function setAssetClosed(bool status) external {
         require(msg.sender == arbasset, "Only Conjure contract can call");
-        assetClosed = true;
-        emit AssetClosed();
+        assetClosed = status;
+        emit AssetClosed(status);
+    }
+
+    /**
+     * @dev Gets the assetClosed indicator
+    */
+    function getAssetClosed() external view returns (bool) {
+        return assetClosed;
     }
 
     /**
