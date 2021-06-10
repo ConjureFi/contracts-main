@@ -474,21 +474,13 @@ describe("Conjure Pricing Core Tests", function () {
     // now set the inverse asset to increase the price
     await mockinverse.setState(3);
 
-    // expect asset to not be frozen
-    let frozen = await conjure.priceFrozen()
-    expect(frozen).to.be.false;
-
     // call price update on the conjure asset
     conjure.updatePrice();
 
     lastprice = await conjure.getLatestPrice()
 
     // expect the price to be 1500 * 2 - 3000
-    expect(lastprice).to.be.equal(0);
-
-    // expect asset to be frozen
-    frozen = await conjure.priceFrozen()
-    expect(frozen).to.be.true;
+    expect(lastprice).to.be.equal(inverseLowerCap);
 
     // asset should now be closed
     opencheck = await ethercollateral.assetClosed()
@@ -507,9 +499,6 @@ describe("Conjure Pricing Core Tests", function () {
     await expect(ethercollateral.openLoan(amountToBorrow,overrides)).to.be.revertedWith("Asset closed");
 
     await expect(ethercollateral.depositCollateral(owner.address, 1,overrides)).to.be.revertedWith("Asset closed for deposit collateral");
-
-    // cant update price any more
-    await expect(conjure.updatePrice()).to.be.revertedWith("Price is frozen");
   });
 
 
@@ -548,42 +537,17 @@ describe("Conjure Pricing Core Tests", function () {
     // now set the inverse asset to increase the price
     await mockinverse.setState(4);
 
-    // expect asset to not be frozen
-    let frozen = await conjure.priceFrozen()
-    expect(frozen).to.be.false;
-
     // call price update on the conjure asset
     conjure.updatePrice();
 
     lastprice = await conjure.getLatestPrice()
 
     // expect the price to be upperBound
-    expect(lastprice).to.be.equal(deplprice.mul(2).sub(inverseLowerCap));
-
-    // expect asset to be frozen
-    frozen = await conjure.priceFrozen()
-    expect(frozen).to.be.true;
+    expect(lastprice).to.be.equal(deplprice.mul(2).sub(0));
 
     // asset should now be closed
     opencheck = await ethercollateral.assetClosed()
-    expect(opencheck).to.be.equal(true);
-
-    // should not be able to open a new loan now
-    // get amount needed
-    const amountToBorrow = "1000000000000000000";
-
-    // send ether
-    let overrides = {
-      value: "1600000000000000000"
-    };
-
-    // should get loan for 1 arb asset
-    await expect(ethercollateral.openLoan(amountToBorrow,overrides)).to.be.revertedWith("Asset closed");
-
-    await expect(ethercollateral.depositCollateral(owner.address, 1,overrides)).to.be.revertedWith("Asset closed for deposit collateral");
-
-    // cant update price any more
-    await expect(conjure.updatePrice()).to.be.revertedWith("Price is frozen");
+    expect(opencheck).to.be.equal(false);
   });
 
 });
