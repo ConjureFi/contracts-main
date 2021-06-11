@@ -521,8 +521,6 @@ contract EtherCollateral is ReentrancyGuard {
      * @param loanID the ID of the loan
     */
     function depositCollateral(address account, uint256 loanID) external payable {
-        // asset must be open
-        require(!assetClosed, "Asset closed for deposit collateral");
         require(msg.value > 0, "Deposit amount must be greater than 0");
 
         // Get the loan from storage

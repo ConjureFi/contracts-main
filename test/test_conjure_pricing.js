@@ -498,8 +498,6 @@ describe("Conjure Pricing Core Tests", function () {
     // should get loan for 1 arb asset
     await expect(ethercollateral.openLoan(amountToBorrow,overrides)).to.be.revertedWith("Asset closed");
 
-    await expect(ethercollateral.depositCollateral(owner.address, 1,overrides)).to.be.revertedWith("Asset closed for deposit collateral");
-
     // back to normal
     await mockinverse.setState(0);
 
@@ -570,7 +568,7 @@ describe("Conjure Pricing Core Tests", function () {
         [0x00],
         ["latestAnswer()"],
         [[mockinverse.address],[zeroaddress]],
-        [[1,1], [100,"120000000000000000000"]],
+        [[1,1], [0,"120000000000000000000"]],
         [owner.address,mock.address],
         ["NAME", "SYMBOL"],
         true
@@ -620,8 +618,6 @@ describe("Conjure Pricing Core Tests", function () {
     // should get loan for 1 arb asset
     await expect(ethercollateral.openLoan(amountToBorrow,overrides)).to.be.revertedWith("Asset closed");
 
-    await expect(ethercollateral.depositCollateral(owner.address, 1,overrides)).to.be.revertedWith("Asset closed for deposit collateral");
-
     // back to normal
     await mockinverse.setState(0);
 
@@ -631,6 +627,9 @@ describe("Conjure Pricing Core Tests", function () {
     // asset should now be opened
     opencheck = await ethercollateral.getAssetClosed()
     expect(opencheck).to.be.equal(false);
+
+    // should get loan for 1 arb asset
+    await ethercollateral.openLoan(amountToBorrow,overrides)
   });
 
 });
