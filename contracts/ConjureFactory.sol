@@ -30,7 +30,7 @@ contract ConjureFactory {
         require(_conjureImplementation != address(0), "No zero address for conjure");
         require(_etherCollateralImplementation != address(0), "No zero address for etherCollateral");
         require(_conjureRouter != address(0), "No zero address for conjureRouter");
-        
+
         factoryOwner = msg.sender;
         conjureImplementation = _conjureImplementation;
         etherCollateralImplementation = _etherCollateralImplementation;
@@ -79,7 +79,7 @@ contract ConjureFactory {
     {
         conjure = conjureImplementation.createClone();
         etherCollateral = etherCollateralImplementation.createClone();
-        
+
         emit NewConjure(conjure, etherCollateral);
 
         IConjure(conjure).initialize(
@@ -123,7 +123,7 @@ contract ConjureFactory {
     function newConjureImplementation(address conjureImplementation_) external {
         require(msg.sender == factoryOwner, "Only factory owner");
         require(conjureImplementation_ != address(0), "No zero address for conjureImplementation_");
-        
+
         conjureImplementation = conjureImplementation_;
         emit NewConjureImplementation(conjureImplementation);
     }
@@ -149,7 +149,7 @@ contract ConjureFactory {
     function newConjureRouter(address payable conjureRouter_) external {
         require(msg.sender == factoryOwner, "Only factory owner");
         require(conjureRouter_ != address(0), "No zero address for conjureRouter_");
-        
+
         conjureRouter = conjureRouter_;
         emit NewConjureRouter(conjureRouter);
     }
@@ -162,7 +162,7 @@ contract ConjureFactory {
     function newFactoryOwner(address payable newOwner) external {
         require(msg.sender == factoryOwner, "Only factory owner");
         require(newOwner != address(0), "No zero address for newOwner");
-        
+
         factoryOwner = newOwner;
         emit FactoryOwnerChanged(factoryOwner);
     }

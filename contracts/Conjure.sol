@@ -7,6 +7,7 @@ import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
+import {IOpenOracleFramework} from "./interfaces/IOpenOracleFramework.sol";
 import "./lib/FixedPoint.sol";
 import "./interfaces/IEtherCollateral.sol";
 
@@ -98,11 +99,8 @@ contract Conjure is IERC20, ReentrancyGuard {
     // The number representing 1.0
     uint256 private constant UNIT = 10**18;
 
-    // chainLink aggregator decimals to give back
-    uint256 private constant CHAINLINK_RETURN_DECIMALS = 8;
-
-    // the eth usd price feed chainLink oracle address
-    address public ethUsdChainLinkOracle;
+    // the eth usd price feed oracle address
+    address public ethUsdOracle;
 
     // lower boundary for inverse assets (10% of deployment price)
     uint256 public inverseLowerCap;
@@ -137,7 +135,7 @@ contract Conjure is IERC20, ReentrancyGuard {
      * @dev initializes the clone implementation and the Conjure contract
      *
      * @param nameSymbol array holding the name and the symbol of the asset
-     * @param conjureAddresses array holding the owner, indexed UniSwap oracle and ethUsdChainLinkOracle address
+     * @param conjureAddresses array holding the owner, indexed UniSwap oracle and ethUsdOracle address
      * @param factoryAddress_ the address of the factory
      * @param collateralContract the EtherCollateral contract of the asset
     */
@@ -156,7 +154,7 @@ contract Conjure is IERC20, ReentrancyGuard {
         _name = nameSymbol[0];
         _symbol = nameSymbol[1];
 
-        ethUsdChainLinkOracle = conjureAddresses[1];
+        ethUsdOracle = conjureAddresses[1];
         _factoryContract = factoryAddress_;
 
         // mint new EtherCollateral contract
@@ -320,19 +318,18 @@ contract Conjure is IERC20, ReentrancyGuard {
     }
 
     /**
-     * @dev gets the latest ETH USD Price from the given oracle
+     * @dev gets the latest ETH USD Price from the given oracle OOF contract
+     * getFeed 0 signals the ETH/USD feed
      *
      * @return the current eth usd price
     */
     function getLatestETHUSDPrice() public view returns (uint) {
         (
+        uint price,
         ,
-        int price,
-        ,
-        ,
-        ) = AggregatorV3Interface(ethUsdChainLinkOracle).latestRoundData();
+        ) = IOpenOracleFramework(ethUsdOracle).getFeed(0);
 
-        return uint(price) * 10 ** (MAXIMUM_DECIMALS - CHAINLINK_RETURN_DECIMALS);
+        return price;
     }
 
     /**
