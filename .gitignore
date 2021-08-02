@@ -11,3 +11,5 @@ package-lock.json
 contracts/Conjure_flat.sol
 contracts/EtherCollateral_flat.sol
 scripts/decoder.js
+scripts/deploy_Claim.js
+contracts/FeeCollect.sol

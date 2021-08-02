@@ -42,4 +42,18 @@ contract ETHUSDOracle_MOCK {
         updatedAt = 1;
         answeredInRound = 1;
     }
+
+    function getFeed(uint256 feedID)
+    public
+    pure
+    returns (
+        uint256 price,
+        uint256 time,
+        uint256 decimals
+    )
+    {
+        price = 1500000000000000000000;
+        time = 1;
+        decimals = 18;
+    }
 }
